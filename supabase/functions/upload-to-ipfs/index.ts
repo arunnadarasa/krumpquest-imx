@@ -84,7 +84,8 @@ serve(async (req) => {
     console.log('Uploaded to Pinata:', pinataData)
 
     const ipfsHash = pinataData.IpfsHash
-    const pinataUrl = `https://gateway.pinata.cloud/ipfs/${ipfsHash}`
+    const gatewayUrl = Deno.env.get('PINATA_GATEWAY') || 'https://gateway.pinata.cloud'
+    const pinataUrl = `${gatewayUrl}/ipfs/${ipfsHash}`
 
     // Save to database
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
