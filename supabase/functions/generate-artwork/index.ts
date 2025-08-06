@@ -96,12 +96,13 @@ serve(async (req) => {
     console.log('Negative prompt:', negativePrompt)
     console.log('Aspect ratio:', stabilityAspectRatio)
 
-    // Create FormData for Stability AI API
+    // Create FormData for Stability AI API with optimization
     const formData = new FormData()
     formData.append('prompt', enhancedPrompt)
     formData.append('negative_prompt', negativePrompt)
     formData.append('aspect_ratio', stabilityAspectRatio)
-    formData.append('output_format', 'png')
+    formData.append('output_format', 'jpeg') // Use JPEG for smaller file size
+    formData.append('output_compression', '85') // Compress to 85% quality for reasonable file size
 
     // Submit generation request to Stability AI Core
     const response = await fetch('https://api.stability.ai/v2beta/stable-image/generate/core', {

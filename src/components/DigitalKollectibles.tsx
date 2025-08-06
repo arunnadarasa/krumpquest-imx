@@ -132,6 +132,14 @@ export default function DigitalKollectibles() {
       if (error) throw error;
 
       if (data?.imageUrl) {
+        // Validate image data size (warn if over 2MB)
+        const estimatedSize = Math.round((data.imageUrl.length * 3) / 4); // Rough base64 to bytes conversion
+        console.log('Generated image size:', Math.round(estimatedSize / 1024), 'KB');
+        
+        if (estimatedSize > 2 * 1024 * 1024) { // Over 2MB
+          toast.warning('Large image generated - may take longer to display');
+        }
+        
         dispatch(setGeneratedImage(data.imageUrl));
         toast.success('Artwork generated successfully!');
       } else {
