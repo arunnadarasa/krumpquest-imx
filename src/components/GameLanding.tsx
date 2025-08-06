@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { useAppDispatch } from '@/hooks/useAppSelector';
 import { startNewGame, setGamePhase } from '@/store/slices/gameSlice';
 import WalletConnect from '@/components/WalletConnect';
-import heroImage from '@/assets/krump-quest-hero.jpg';
+import VideoHero from '@/components/VideoHero';
 
 const GameLanding = () => {
   const [currentView, setCurrentView] = useState<'landing' | 'classes' | 'create'>('landing');
@@ -122,28 +122,16 @@ const GameLanding = () => {
   if (currentView === 'landing') {
     return (
       <div className="min-h-screen bg-background relative overflow-hidden">
-        {/* Dynamic Background Elements */}
-        <div className="absolute inset-0 opacity-30">
-          <div className="floating absolute top-20 left-10 w-32 h-32 bg-primary/20 rounded-full blur-xl"></div>
-          <div className="floating absolute top-40 right-20 w-24 h-24 bg-secondary/20 rounded-full blur-lg" style={{animationDelay: '1s'}}></div>
-          <div className="floating absolute bottom-20 left-1/4 w-40 h-40 bg-accent/20 rounded-full blur-2xl" style={{animationDelay: '2s'}}></div>
-        </div>
-
-        {/* Hero Section */}
-        <div 
-          className="relative h-screen flex items-center justify-center bg-cover bg-center"
-          style={{ backgroundImage: `url(${heroImage})` }}
-        >
-          <div className="absolute inset-0 bg-gradient-to-b from-background/80 via-background/60 to-background/90" />
-          
-          <div className="relative z-10 text-center max-w-4xl mx-auto px-6 animate-slide-in-up">
-            <h1 className="font-orbitron font-black text-6xl md:text-8xl mb-6 text-holographic">
+        {/* Hero Section with Video Background */}
+        <VideoHero>
+          <div className="text-center max-w-4xl mx-auto px-6 animate-slide-in-up">
+            <h1 className="font-orbitron font-black text-6xl md:text-8xl mb-6 text-holographic drop-shadow-2xl">
               KRUMP QUEST
             </h1>
-            <h2 className="font-exo text-2xl md:text-4xl text-glow-secondary mb-4 font-bold animate-slide-in-left">
+            <h2 className="font-exo text-2xl md:text-4xl text-glow-secondary mb-4 font-bold animate-slide-in-left drop-shadow-lg">
               Rise of the Street Kingdom
             </h2>
-            <p className="text-muted-foreground text-lg md:text-xl mb-8 max-w-2xl mx-auto leading-relaxed">
+            <p className="text-muted-foreground text-lg md:text-xl mb-8 max-w-2xl mx-auto leading-relaxed drop-shadow-md">
               Master the ancient art of Krump dancing. Battle legendary OGs across 15 countries. 
               Rise from Micro to Twin rank in this epic street dance RPG.
             </p>
@@ -156,32 +144,32 @@ const GameLanding = () => {
                 variant="premium" 
                 size="xxl"
                 onClick={() => dispatch(startNewGame())}
-                className="font-orbitron hover-lift pulse-glow"
+                className="font-orbitron hover-lift pulse-glow shadow-2xl"
               >
                 Start Your Journey
               </Button>
             </div>
 
             <div className="mt-16 grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
-              <div className="glass-strong rounded-xl p-6 hover-lift">
+              <div className="glass-strong rounded-xl p-6 hover-lift shadow-neon">
                 <div className="text-3xl font-bold text-glow mb-2">12</div>
                 <div className="text-sm text-muted-foreground font-medium">Krump Styles</div>
               </div>
-              <div className="glass-strong rounded-xl p-6 hover-lift" style={{animationDelay: '0.1s'}}>
+              <div className="glass-strong rounded-xl p-6 hover-lift shadow-neon" style={{animationDelay: '0.1s'}}>
                 <div className="text-3xl font-bold text-glow-secondary mb-2">15</div>
                 <div className="text-sm text-muted-foreground font-medium">Countries</div>
               </div>
-              <div className="glass-strong rounded-xl p-6 hover-lift" style={{animationDelay: '0.2s'}}>
+              <div className="glass-strong rounded-xl p-6 hover-lift shadow-neon" style={{animationDelay: '0.2s'}}>
                 <div className="text-3xl font-bold text-glow-accent mb-2">10</div>
                 <div className="text-sm text-muted-foreground font-medium">Rank Levels</div>
               </div>
-              <div className="glass-strong rounded-xl p-6 hover-lift" style={{animationDelay: '0.3s'}}>
+              <div className="glass-strong rounded-xl p-6 hover-lift shadow-neon" style={{animationDelay: '0.3s'}}>
                 <div className="text-3xl font-bold text-glow mb-2">∞</div>
                 <div className="text-sm text-muted-foreground font-medium">Combinations</div>
               </div>
             </div>
           </div>
-        </div>
+        </VideoHero>
 
         {/* Game Features */}
         <div className="py-24 px-6 relative">
