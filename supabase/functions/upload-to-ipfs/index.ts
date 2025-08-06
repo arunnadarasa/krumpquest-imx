@@ -36,16 +36,52 @@ serve(async (req) => {
       )
     }
 
-    console.log('Downloading image from:', imageUrl)
+    console.log('Processing image URL type:', imageUrl.startsWith('data:') ? 'base64 data URL' : 'regular URL')
 
-    // Download the image
-    const imageResponse = await fetch(imageUrl)
-    if (!imageResponse.ok) {
-      throw new Error(`Failed to download image: ${imageResponse.status}`)
+    let imageBlob: Blob
+
+    if (imageUrl.startsWith('data:')) {
+      // Handle base64 data URL
+      console.log('Converting base64 data URL to blob...')
+      
+      // Validate and extract base64 data
+      const base64Match = imageUrl.match(/^data:image\/(\w+);base64,(.+)$/)
+      if (!base64Match) {
+        throw new Error('Invalid base64 data URL format')
+      }
+      
+      const [, extension, base64Data] = base64Match
+      console.log('Image format:', extension, 'Base64 length:', base64Data.length)
+      
+      // Clean and validate base64
+      const cleanBase64 = base64Data.replace(/[^A-Za-z0-9+/=]/g, '')
+      if (cleanBase64.length % 4 !== 0) {
+        throw new Error('Invalid base64 string length')
+      }
+      
+      // Convert base64 to blob using fetch (more reliable than atob)
+      try {
+        const response = await fetch(imageUrl)
+        imageBlob = await response.blob()
+        console.log('Base64 converted to blob, size:', imageBlob.size)
+      } catch (error) {
+        console.error('Failed to convert base64:', error)
+        throw new Error('Failed to process base64 image data')
+      }
+    } else {
+      // Handle regular URL
+      console.log('Downloading image from URL:', imageUrl)
+      const imageResponse = await fetch(imageUrl)
+      if (!imageResponse.ok) {
+        throw new Error(`Failed to download image: ${imageResponse.status}`)
+      }
+      imageBlob = await imageResponse.blob()
+      console.log('Image downloaded, size:', imageBlob.size)
     }
 
-    const imageBlob = await imageResponse.blob()
-    console.log('Image downloaded, size:', imageBlob.size)
+    if (imageBlob.size === 0) {
+      throw new Error('Image blob is empty')
+    }
 
     // Create form data for Pinata upload
     const formData = new FormData()

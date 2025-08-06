@@ -154,104 +154,49 @@ export default function DigitalKollectibles() {
 
   const downloadGeneratedImage = () => {
     if (!generatedImageUrl) {
-      toast.error('No artwork generated to download');
+      toast.error('No artwork to download');
       return;
     }
 
     try {
-      // Validate data URL format
-      if (!generatedImageUrl.startsWith('data:image/')) {
-        throw new Error('Invalid image data format');
-      }
-
-      // Extract file extension and validate MIME type
-      const mimeMatch = generatedImageUrl.match(/data:image\/(\w+);base64,/);
-      if (!mimeMatch) {
-        throw new Error('Unable to determine image format');
-      }
-      
-      const extension = mimeMatch[1];
-      const mimeType = `image/${extension}`;
-      
       // Generate filename
       const timestamp = new Date().toISOString().slice(0, 19).replace(/[:.]/g, '-');
-      const filename = `krump-artwork-${selectedStyle.toLowerCase().replace(/\s+/g, '-')}-${timestamp}.${extension}`;
+      const filename = `krump-artwork-${selectedStyle.toLowerCase().replace(/\s+/g, '-')}-${timestamp}.jpg`;
       
-      // Extract and clean base64 data
-      const base64Data = generatedImageUrl.split(',')[1];
-      if (!base64Data) {
-        throw new Error('No base64 data found');
-      }
-      
-      console.log('Base64 data length:', base64Data.length);
-      
-      // Clean base64 string of any invalid characters
-      const cleanBase64 = base64Data.replace(/[^A-Za-z0-9+/=]/g, '');
-      
-      // Validate base64 length (must be multiple of 4)
-      if (cleanBase64.length % 4 !== 0) {
-        throw new Error('Invalid base64 string length');
-      }
-      
-      // Try to decode base64 - use more robust method
-      let byteString: string;
-      try {
-        byteString = atob(cleanBase64);
-      } catch (atobError) {
-        console.error('atob failed:', atobError);
-        // Fallback: try using fetch with data URL
-        fetch(generatedImageUrl)
-          .then(response => response.blob())
-          .then(blob => {
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = filename;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            URL.revokeObjectURL(url);
-            toast.success('Artwork downloaded successfully!');
-          })
-          .catch(fetchError => {
-            console.error('Fetch fallback failed:', fetchError);
-            toast.error('Failed to download artwork - please try again');
-          });
-        return;
-      }
-      
-      // Convert to blob using ArrayBuffer
-      const arrayBuffer = new ArrayBuffer(byteString.length);
-      const uint8Array = new Uint8Array(arrayBuffer);
-      
-      for (let i = 0; i < byteString.length; i++) {
-        uint8Array[i] = byteString.charCodeAt(i);
-      }
-      
-      const blob = new Blob([arrayBuffer], { type: mimeType });
-      
-      // Validate blob size
-      if (blob.size === 0) {
-        throw new Error('Generated blob is empty');
-      }
-      
-      console.log('Generated blob size:', Math.round(blob.size / 1024), 'KB');
-      
-      // Create download link and trigger download
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = filename;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-      
-      toast.success('Artwork downloaded successfully!');
+      // Use fetch to download the image more reliably
+      fetch(generatedImageUrl)
+        .then(response => {
+          if (!response.ok) {
+            throw new Error(`Failed to fetch image: ${response.status}`);
+          }
+          return response.blob();
+        })
+        .then(blob => {
+          if (blob.size === 0) {
+            throw new Error('Downloaded image is empty');
+          }
+          
+          console.log('Downloaded blob size:', Math.round(blob.size / 1024), 'KB');
+          
+          // Create download link and trigger download
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = filename;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          URL.revokeObjectURL(url);
+          
+          toast.success('Artwork downloaded successfully!');
+        })
+        .catch(error => {
+          console.error('Download error:', error);
+          toast.error(`Failed to download artwork: ${error.message}`);
+        });
     } catch (error: any) {
-      console.error('Download error:', error);
-      console.error('Data URL preview:', generatedImageUrl.substring(0, 100) + '...');
-      toast.error(`Failed to download artwork: ${error.message}`);
+      console.error('Download preparation error:', error);
+      toast.error(`Failed to prepare download: ${error.message}`);
     }
   };
 
@@ -292,6 +237,46 @@ export default function DigitalKollectibles() {
       console.error('Error uploading to IPFS:', error);
       dispatch(setError(error.message || 'Failed to upload to IPFS'));
       toast.error('Failed to upload to IPFS');
+    }
+  };
+
+  const downloadFromIPFS = (kollectible: any) => {
+    if (!kollectible.pinata_url) {
+      toast.error('No IPFS URL available for this artwork');
+      return;
+    }
+
+    try {
+      const timestamp = new Date(kollectible.created_at).toISOString().slice(0, 19).replace(/[:.]/g, '-');
+      const filename = `krump-kollectible-${kollectible.style.toLowerCase().replace(/\s+/g, '-')}-${timestamp}.jpg`;
+      
+      // Download from IPFS URL
+      fetch(kollectible.pinata_url)
+        .then(response => {
+          if (!response.ok) {
+            throw new Error(`Failed to fetch from IPFS: ${response.status}`);
+          }
+          return response.blob();
+        })
+        .then(blob => {
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = filename;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          URL.revokeObjectURL(url);
+          
+          toast.success('Kollectible downloaded successfully!');
+        })
+        .catch(error => {
+          console.error('IPFS download error:', error);
+          toast.error(`Failed to download from IPFS: ${error.message}`);
+        });
+    } catch (error: any) {
+      console.error('Download preparation error:', error);
+      toast.error(`Failed to prepare download: ${error.message}`);
     }
   };
 
@@ -535,9 +520,9 @@ export default function DigitalKollectibles() {
                   {kollectibles.map((kollectible) => (
                     <div key={kollectible.id} className="bg-gray-700/50 rounded-lg p-4">
                       <div className="flex gap-3">
-                        {kollectible.image_url && (
+                        {kollectible.pinata_url && (
                           <img
-                            src={kollectible.image_url}
+                            src={kollectible.pinata_url}
                             alt={kollectible.prompt}
                             className="w-16 h-16 rounded object-cover"
                           />
@@ -554,16 +539,28 @@ export default function DigitalKollectibles() {
                               {new Date(kollectible.created_at).toLocaleDateString()}
                             </span>
                           </div>
-                          {kollectible.pinata_url && (
-                            <a
-                              href={kollectible.pinata_url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-purple-400 hover:text-purple-300 text-xs mt-1 block"
-                            >
-                              🔗 View on IPFS
-                            </a>
-                          )}
+                          <div className="flex items-center gap-2 mt-2">
+                            {kollectible.pinata_url && (
+                              <>
+                                <a
+                                  href={kollectible.pinata_url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-purple-400 hover:text-purple-300 text-xs"
+                                >
+                                  🔗 View on IPFS
+                                </a>
+                                <Button
+                                  onClick={() => downloadFromIPFS(kollectible)}
+                                  variant="outline"
+                                  size="sm"
+                                  className="h-6 px-2 text-xs"
+                                >
+                                  📥 Download
+                                </Button>
+                              </>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </div>
