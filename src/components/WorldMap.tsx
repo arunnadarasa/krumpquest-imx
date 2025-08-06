@@ -112,7 +112,7 @@ export default function WorldMap() {
                   </div>
                 </div>
               </div>
-              <div className="flex items-center gap-2 md:gap-3">
+              <div className="grid grid-cols-2 md:flex md:items-center gap-2 md:gap-3">
                 <Button onClick={handleTraining} variant="neon" size="sm" className="h-10 md:h-8 px-3 md:px-4 min-w-[44px] flex-1 md:flex-none">
                   ⚡ Train
                 </Button>
@@ -121,6 +121,9 @@ export default function WorldMap() {
                 </Button>
                 <Button onClick={handleRecordShop} variant="outline" size="sm" className="h-10 md:h-8 px-3 md:px-4 min-w-[44px] flex-1 md:flex-none border-accent/50 hover:bg-accent/20">
                   🎵 Records
+                </Button>
+                <Button onClick={() => dispatch(setGamePhase('digital_kollectibles'))} variant="outline" size="sm" className="h-10 md:h-8 px-3 md:px-4 min-w-[44px] flex-1 md:flex-none border-purple-500/50 hover:bg-purple-500/20">
+                  🎨 Digital Kollectibles
                 </Button>
               </div>
             </div>

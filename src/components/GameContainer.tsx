@@ -10,6 +10,7 @@ import EquipmentSelection from './EquipmentSelection';
 import KrumpWisdom from './KrumpWisdom';
 import AnimeOverworldExploration from './AnimeOverworldExploration';
 import RecordShop from './RecordShop';
+import DigitalKollectibles from './DigitalKollectibles';
 
 export default function GameContainer() {
   const currentPhase = useAppSelector(state => state.game.currentPhase);
@@ -34,6 +35,8 @@ export default function GameContainer() {
         return <AnimeOverworldExploration />;
       case 'record_shop':
         return <RecordShop />;
+      case 'digital_kollectibles':
+        return <DigitalKollectibles />;
       default:
         return <GameLanding />;
     }

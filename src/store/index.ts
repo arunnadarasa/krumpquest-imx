@@ -5,6 +5,7 @@ import worldReducer from './slices/worldSlice';
 import gameReducer from './slices/gameSlice';
 import overworldReducer from './slices/overworldSlice';
 import dialogueReducer from './slices/dialogueSlice';
+import kollectiblesReducer from './slices/kollectiblesSlice';
 
 export const store = configureStore({
   reducer: {
@@ -14,6 +15,7 @@ export const store = configureStore({
     game: gameReducer,
     overworld: overworldReducer,
     dialogue: dialogueReducer,
+    kollectibles: kollectiblesReducer,
   },
 });
 

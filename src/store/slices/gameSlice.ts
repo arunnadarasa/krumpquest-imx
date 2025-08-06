@@ -1,6 +1,6 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
-type GamePhase = 'menu' | 'character_creation' | 'world_map' | 'battle' | 'training' | 'equipment' | 'krump_wisdom' | 'wisdom' | 'overworld_exploration' | 'record_shop';
+type GamePhase = 'menu' | 'character_creation' | 'world_map' | 'battle' | 'training' | 'equipment' | 'krump_wisdom' | 'wisdom' | 'overworld_exploration' | 'record_shop' | 'digital_kollectibles';
 
 interface GameState {
   currentPhase: GamePhase;

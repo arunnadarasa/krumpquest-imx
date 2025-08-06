@@ -2,3 +2,9 @@ project_id = "hzjfnebtbsdrkeuixebq"
 
 [functions.get-wallet-config]
 verify_jwt = false
+
+[functions.generate-artwork]
+verify_jwt = false
+
+[functions.upload-to-ipfs]
+verify_jwt = false

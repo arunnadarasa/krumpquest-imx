@@ -14,7 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      kollectibles: {
+        Row: {
+          created_at: string
+          id: string
+          image_url: string | null
+          ipfs_hash: string | null
+          pinata_url: string | null
+          prompt: string
+          style: string | null
+          updated_at: string
+          wallet_address: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          ipfs_hash?: string | null
+          pinata_url?: string | null
+          prompt: string
+          style?: string | null
+          updated_at?: string
+          wallet_address: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          ipfs_hash?: string | null
+          pinata_url?: string | null
+          prompt?: string
+          style?: string | null
+          updated_at?: string
+          wallet_address?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
