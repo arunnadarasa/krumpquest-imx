@@ -129,7 +129,7 @@ serve(async (req) => {
       throw new Error(`Failed to generate image - ${errorMessage}`)
     }
 
-    // Convert response to base64 using Deno's built-in encoding
+    // Convert response to base64 using safe chunked approach
     const imageBuffer = await response.arrayBuffer()
     const uint8Array = new Uint8Array(imageBuffer)
     console.log('Image buffer size:', uint8Array.length, 'bytes')
@@ -138,12 +138,29 @@ serve(async (req) => {
     const contentType = response.headers.get('content-type') || 'image/png'
     console.log('Content type:', contentType)
     
-    // Use Deno's built-in base64 encoding - more reliable than manual conversion
-    const base64 = btoa(String.fromCharCode(...uint8Array))
-    const imageUrl = `data:${contentType};base64,${base64}`
+    // Convert to base64 in safe chunks to avoid stack overflow
+    let base64 = ''
+    const chunkSize = 1024 // Smaller chunks for safety
     
-    console.log('Image generated successfully with Stability AI Core, base64 length:', base64.length)
-    console.log('Data URL preview:', imageUrl.substring(0, 100) + '...')
+    try {
+      for (let i = 0; i < uint8Array.length; i += chunkSize) {
+        const chunk = uint8Array.slice(i, i + chunkSize)
+        const chunkString = Array.from(chunk, byte => String.fromCharCode(byte)).join('')
+        base64 += btoa(chunkString)
+      }
+      
+      const imageUrl = `data:${contentType};base64,${base64}`
+      console.log('Image generated successfully with Stability AI Core, base64 length:', base64.length)
+      console.log('Data URL preview:', imageUrl.substring(0, 100) + '...')
+      
+      // Validate the base64 string
+      if (base64.length === 0) {
+        throw new Error('Base64 conversion resulted in empty string')
+      }
+    } catch (encodingError) {
+      console.error('Base64 encoding error:', encodingError)
+      throw new Error(`Failed to encode image data: ${encodingError.message}`)
+    }
 
     return new Response(
       JSON.stringify({ 
