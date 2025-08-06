@@ -129,21 +129,21 @@ serve(async (req) => {
       throw new Error(`Failed to generate image - ${errorMessage}`)
     }
 
-    // Convert response to base64 using efficient chunk-based approach
+    // Convert response to base64 using Deno's built-in encoding
     const imageBuffer = await response.arrayBuffer()
     const uint8Array = new Uint8Array(imageBuffer)
     console.log('Image buffer size:', uint8Array.length, 'bytes')
     
-    // Convert to base64 in chunks to avoid stack overflow
-    let base64 = ''
-    const chunkSize = 8192
-    for (let i = 0; i < uint8Array.length; i += chunkSize) {
-      const chunk = uint8Array.slice(i, i + chunkSize)
-      base64 += btoa(String.fromCharCode.apply(null, Array.from(chunk)))
-    }
+    // Get the actual content type from response headers
+    const contentType = response.headers.get('content-type') || 'image/png'
+    console.log('Content type:', contentType)
     
-    const imageUrl = `data:image/png;base64,${base64}`
+    // Use Deno's built-in base64 encoding - more reliable than manual conversion
+    const base64 = btoa(String.fromCharCode(...uint8Array))
+    const imageUrl = `data:${contentType};base64,${base64}`
+    
     console.log('Image generated successfully with Stability AI Core, base64 length:', base64.length)
+    console.log('Data URL preview:', imageUrl.substring(0, 100) + '...')
 
     return new Response(
       JSON.stringify({ 
