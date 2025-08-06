@@ -24,12 +24,20 @@ serve(async (req) => {
       animalSpecies = ''
     } = await req.json()
 
-    // Ensure dimensions are multiples of 64 for Stable Horde
-    const validatedWidth = Math.round(width / 64) * 64
-    const validatedHeight = Math.round(height / 64) * 64
+    // Map dimensions to aspect ratio for Stability AI
+    let stabilityAspectRatio = '1:1'
+    if (width > height) {
+      stabilityAspectRatio = '16:9'
+    } else if (height > width) {
+      stabilityAspectRatio = '9:16'
+    }
+    
+    // Override with provided aspectRatio if valid
+    if (['1:1', '16:9', '9:16', '21:9', '2:3', '3:2', '4:5', '5:4'].includes(aspectRatio)) {
+      stabilityAspectRatio = aspectRatio
+    }
 
-    console.log('Original dimensions:', { width, height })
-    console.log('Validated dimensions:', { width: validatedWidth, height: validatedHeight })
+    console.log('Using aspect ratio:', stabilityAspectRatio)
 
     if (!wallet_address) {
       return new Response(
@@ -41,10 +49,10 @@ serve(async (req) => {
       )
     }
 
-    const apiKey = Deno.env.get('STABLEHORDE_API_KEY')
+    const apiKey = Deno.env.get('STABILITY_API_KEY')
     if (!apiKey) {
       return new Response(
-        JSON.stringify({ error: 'API key not configured' }),
+        JSON.stringify({ error: 'Stability AI API key not configured' }),
         { 
           status: 500, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
@@ -83,112 +91,47 @@ serve(async (req) => {
     }
     enhancedPrompt += `, ${styleEnhancements[style as keyof typeof styleEnhancements] || styleEnhancements.comic_book}`
 
-    // Prepare API parameters
-    const apiParams = {
-      prompt: enhancedPrompt,
-      params: {
-        width: validatedWidth,
-        height: validatedHeight,
-        steps: 28,
-        cfg_scale: 8,
-        sampler_name: 'k_dpmpp_2m', // Fixed: using valid sampler name
-      },
-      nsfw: false,
-      censor_nsfw: true,
-      models: ['AlbedoBase XL (SDXL)'], // More specific model
-      r2: true,
-    }
-
-    console.log('Generating artwork with Stable Horde API...')
+    console.log('Generating artwork with Stability AI Core...')
     console.log('Enhanced prompt:', enhancedPrompt)
-    console.log('API parameters:', JSON.stringify(apiParams, null, 2))
+    console.log('Negative prompt:', negativePrompt)
+    console.log('Aspect ratio:', stabilityAspectRatio)
 
-    // Submit generation request to Stable Horde
-    const submitResponse = await fetch('https://stablehorde.net/api/v2/generate/async', {
+    // Create FormData for Stability AI API
+    const formData = new FormData()
+    formData.append('prompt', enhancedPrompt)
+    formData.append('negative_prompt', negativePrompt)
+    formData.append('aspect_ratio', stabilityAspectRatio)
+    formData.append('output_format', 'png')
+
+    // Submit generation request to Stability AI Core
+    const response = await fetch('https://api.stability.ai/v2beta/stable-image/generate/core', {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
-        'apikey': apiKey,
+        'Authorization': `Bearer ${apiKey}`,
+        'Accept': 'image/*'
       },
-      body: JSON.stringify(apiParams),
+      body: formData,
     })
 
-    if (!submitResponse.ok) {
-      const errorText = await submitResponse.text()
-      console.error('Stable Horde submit error:', errorText)
-      throw new Error(`Failed to submit generation request: ${submitResponse.status}`)
+    if (!response.ok) {
+      const errorText = await response.text()
+      console.error('Stability AI error:', errorText)
+      throw new Error(`Failed to generate image: ${response.status} - ${errorText}`)
     }
 
-    const submitData = await submitResponse.json()
-    const requestId = submitData.id
+    // Convert response to base64 for consistent handling
+    const imageBuffer = await response.arrayBuffer()
+    const base64Image = btoa(String.fromCharCode(...new Uint8Array(imageBuffer)))
+    const imageUrl = `data:image/png;base64,${base64Image}`
 
-    if (!requestId) {
-      throw new Error('No request ID received from Stable Horde')
-    }
-
-    console.log('Generation request submitted, ID:', requestId)
-
-    // Poll for completion
-    let attempts = 0
-    const maxAttempts = 60 // 5 minutes max wait time
-    let imageUrl = null
-
-    while (attempts < maxAttempts) {
-      await new Promise(resolve => setTimeout(resolve, 5000)) // Wait 5 seconds
-      attempts++
-
-      console.log(`Checking generation status (attempt ${attempts}/${maxAttempts})...`)
-
-      const statusResponse = await fetch(`https://stablehorde.net/api/v2/generate/check/${requestId}`, {
-        headers: {
-          'apikey': apiKey,
-        },
-      })
-
-      if (!statusResponse.ok) {
-        console.error('Status check failed:', await statusResponse.text())
-        continue
-      }
-
-      const statusData = await statusResponse.json()
-      console.log('Status data:', statusData)
-
-      if (statusData.done) {
-        // Get the generated images
-        const resultResponse = await fetch(`https://stablehorde.net/api/v2/generate/status/${requestId}`, {
-          headers: {
-            'apikey': apiKey,
-          },
-        })
-
-        if (resultResponse.ok) {
-          const resultData = await resultResponse.json()
-          console.log('Result data:', resultData)
-
-          if (resultData.generations && resultData.generations.length > 0) {
-            imageUrl = resultData.generations[0].img
-            break
-          }
-        }
-      }
-
-      if (statusData.faulted) {
-        throw new Error('Generation request faulted')
-      }
-    }
-
-    if (!imageUrl) {
-      throw new Error('Image generation timed out or failed')
-    }
-
-    console.log('Image generated successfully:', imageUrl)
+    console.log('Image generated successfully with Stability AI Core')
 
     return new Response(
       JSON.stringify({ 
         imageUrl,
         prompt: enhancedPrompt,
         style,
-        requestId 
+        aspectRatio: stabilityAspectRatio
       }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
