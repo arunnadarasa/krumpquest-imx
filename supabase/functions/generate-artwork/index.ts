@@ -24,6 +24,13 @@ serve(async (req) => {
       animalSpecies = ''
     } = await req.json()
 
+    // Ensure dimensions are multiples of 64 for Stable Horde
+    const validatedWidth = Math.round(width / 64) * 64
+    const validatedHeight = Math.round(height / 64) * 64
+
+    console.log('Original dimensions:', { width, height })
+    console.log('Validated dimensions:', { width: validatedWidth, height: validatedHeight })
+
     if (!wallet_address) {
       return new Response(
         JSON.stringify({ error: 'Missing required parameters' }),
@@ -76,8 +83,25 @@ serve(async (req) => {
     }
     enhancedPrompt += `, ${styleEnhancements[style as keyof typeof styleEnhancements] || styleEnhancements.comic_book}`
 
+    // Prepare API parameters
+    const apiParams = {
+      prompt: enhancedPrompt,
+      params: {
+        width: validatedWidth,
+        height: validatedHeight,
+        steps: 28,
+        cfg_scale: 8,
+        sampler_name: 'k_dpmpp_2m', // Fixed: using valid sampler name
+      },
+      nsfw: false,
+      censor_nsfw: true,
+      models: ['AlbedoBase XL (SDXL)'], // More specific model
+      r2: true,
+    }
+
     console.log('Generating artwork with Stable Horde API...')
     console.log('Enhanced prompt:', enhancedPrompt)
+    console.log('API parameters:', JSON.stringify(apiParams, null, 2))
 
     // Submit generation request to Stable Horde
     const submitResponse = await fetch('https://stablehorde.net/api/v2/generate/async', {
@@ -86,20 +110,7 @@ serve(async (req) => {
         'Content-Type': 'application/json',
         'apikey': apiKey,
       },
-      body: JSON.stringify({
-        prompt: enhancedPrompt,
-        params: {
-          width: width,
-          height: height,
-          steps: 28, // Recommended 25-30
-          cfg_scale: 8, // Recommended 7-9
-          sampler_name: 'DPM++ 2M Karras', // Recommended sampler
-        },
-        nsfw: false,
-        censor_nsfw: true,
-        models: ['stable_diffusion'],
-        r2: true, // Use R2 storage for faster access
-      }),
+      body: JSON.stringify(apiParams),
     })
 
     if (!submitResponse.ok) {
