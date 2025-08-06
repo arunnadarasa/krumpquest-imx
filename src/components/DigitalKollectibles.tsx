@@ -159,17 +159,68 @@ export default function DigitalKollectibles() {
     }
 
     try {
-      // Extract file extension from data URL (data:image/jpeg;base64,... or data:image/png;base64,...)
+      // Validate data URL format
+      if (!generatedImageUrl.startsWith('data:image/')) {
+        throw new Error('Invalid image data format');
+      }
+
+      // Extract file extension and validate MIME type
       const mimeMatch = generatedImageUrl.match(/data:image\/(\w+);base64,/);
-      const extension = mimeMatch ? mimeMatch[1] : 'png';
+      if (!mimeMatch) {
+        throw new Error('Unable to determine image format');
+      }
       
-      // Generate filename based on current timestamp and style
+      const extension = mimeMatch[1];
+      const mimeType = `image/${extension}`;
+      
+      // Generate filename
       const timestamp = new Date().toISOString().slice(0, 19).replace(/[:.]/g, '-');
       const filename = `krump-artwork-${selectedStyle.toLowerCase().replace(/\s+/g, '-')}-${timestamp}.${extension}`;
       
-      // Convert data URL to blob
-      const byteString = atob(generatedImageUrl.split(',')[1]);
-      const mimeType = generatedImageUrl.split(',')[0].split(':')[1].split(';')[0];
+      // Extract and clean base64 data
+      const base64Data = generatedImageUrl.split(',')[1];
+      if (!base64Data) {
+        throw new Error('No base64 data found');
+      }
+      
+      console.log('Base64 data length:', base64Data.length);
+      
+      // Clean base64 string of any invalid characters
+      const cleanBase64 = base64Data.replace(/[^A-Za-z0-9+/=]/g, '');
+      
+      // Validate base64 length (must be multiple of 4)
+      if (cleanBase64.length % 4 !== 0) {
+        throw new Error('Invalid base64 string length');
+      }
+      
+      // Try to decode base64 - use more robust method
+      let byteString: string;
+      try {
+        byteString = atob(cleanBase64);
+      } catch (atobError) {
+        console.error('atob failed:', atobError);
+        // Fallback: try using fetch with data URL
+        fetch(generatedImageUrl)
+          .then(response => response.blob())
+          .then(blob => {
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+            toast.success('Artwork downloaded successfully!');
+          })
+          .catch(fetchError => {
+            console.error('Fetch fallback failed:', fetchError);
+            toast.error('Failed to download artwork - please try again');
+          });
+        return;
+      }
+      
+      // Convert to blob using ArrayBuffer
       const arrayBuffer = new ArrayBuffer(byteString.length);
       const uint8Array = new Uint8Array(arrayBuffer);
       
@@ -178,6 +229,13 @@ export default function DigitalKollectibles() {
       }
       
       const blob = new Blob([arrayBuffer], { type: mimeType });
+      
+      // Validate blob size
+      if (blob.size === 0) {
+        throw new Error('Generated blob is empty');
+      }
+      
+      console.log('Generated blob size:', Math.round(blob.size / 1024), 'KB');
       
       // Create download link and trigger download
       const url = URL.createObjectURL(blob);
@@ -190,9 +248,10 @@ export default function DigitalKollectibles() {
       URL.revokeObjectURL(url);
       
       toast.success('Artwork downloaded successfully!');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Download error:', error);
-      toast.error('Failed to download artwork');
+      console.error('Data URL preview:', generatedImageUrl.substring(0, 100) + '...');
+      toast.error(`Failed to download artwork: ${error.message}`);
     }
   };
 
