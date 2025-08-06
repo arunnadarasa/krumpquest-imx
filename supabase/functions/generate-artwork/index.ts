@@ -113,18 +113,37 @@ serve(async (req) => {
       body: formData,
     })
 
-    if (!response.ok) {
-      const errorText = await response.text()
-      console.error('Stability AI error:', errorText)
-      throw new Error(`Failed to generate image: ${response.status} - ${errorText}`)
+    console.log('Stability AI response status:', response.status)
+    console.log('Stability AI response headers:', Object.fromEntries(response.headers.entries()))
+
+    // Handle response with explicit status checking
+    if (response.status !== 200) {
+      let errorMessage = `HTTP ${response.status}`
+      try {
+        const errorText = await response.text()
+        console.error('Stability AI error response:', errorText)
+        errorMessage = `${response.status}: ${errorText}`
+      } catch (e) {
+        console.error('Failed to read error response:', e)
+      }
+      throw new Error(`Failed to generate image - ${errorMessage}`)
     }
 
-    // Convert response to base64 for consistent handling
+    // Convert response to base64 using efficient chunk-based approach
     const imageBuffer = await response.arrayBuffer()
-    const base64Image = btoa(String.fromCharCode(...new Uint8Array(imageBuffer)))
-    const imageUrl = `data:image/png;base64,${base64Image}`
-
-    console.log('Image generated successfully with Stability AI Core')
+    const uint8Array = new Uint8Array(imageBuffer)
+    console.log('Image buffer size:', uint8Array.length, 'bytes')
+    
+    // Convert to base64 in chunks to avoid stack overflow
+    let base64 = ''
+    const chunkSize = 8192
+    for (let i = 0; i < uint8Array.length; i += chunkSize) {
+      const chunk = uint8Array.slice(i, i + chunkSize)
+      base64 += btoa(String.fromCharCode.apply(null, Array.from(chunk)))
+    }
+    
+    const imageUrl = `data:image/png;base64,${base64}`
+    console.log('Image generated successfully with Stability AI Core, base64 length:', base64.length)
 
     return new Response(
       JSON.stringify({ 
