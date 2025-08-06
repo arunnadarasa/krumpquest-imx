@@ -152,6 +152,50 @@ export default function DigitalKollectibles() {
     }
   };
 
+  const downloadGeneratedImage = () => {
+    if (!generatedImageUrl) {
+      toast.error('No artwork generated to download');
+      return;
+    }
+
+    try {
+      // Extract file extension from data URL (data:image/jpeg;base64,... or data:image/png;base64,...)
+      const mimeMatch = generatedImageUrl.match(/data:image\/(\w+);base64,/);
+      const extension = mimeMatch ? mimeMatch[1] : 'png';
+      
+      // Generate filename based on current timestamp and style
+      const timestamp = new Date().toISOString().slice(0, 19).replace(/[:.]/g, '-');
+      const filename = `krump-artwork-${selectedStyle.toLowerCase().replace(/\s+/g, '-')}-${timestamp}.${extension}`;
+      
+      // Convert data URL to blob
+      const byteString = atob(generatedImageUrl.split(',')[1]);
+      const mimeType = generatedImageUrl.split(',')[0].split(':')[1].split(';')[0];
+      const arrayBuffer = new ArrayBuffer(byteString.length);
+      const uint8Array = new Uint8Array(arrayBuffer);
+      
+      for (let i = 0; i < byteString.length; i++) {
+        uint8Array[i] = byteString.charCodeAt(i);
+      }
+      
+      const blob = new Blob([arrayBuffer], { type: mimeType });
+      
+      // Create download link and trigger download
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      
+      toast.success('Artwork downloaded successfully!');
+    } catch (error) {
+      console.error('Download error:', error);
+      toast.error('Failed to download artwork');
+    }
+  };
+
   const uploadToIPFS = async () => {
     if (!generatedImageUrl || !address) {
       toast.error('No artwork to upload');
@@ -375,13 +419,22 @@ export default function DigitalKollectibles() {
                 </Button>
 
                 {generatedImageUrl && (
-                  <Button
-                    onClick={uploadToIPFS}
-                    disabled={isUploading}
-                    className="w-full bg-green-600 hover:bg-green-700"
-                  >
-                    {isUploading ? '📤 Uploading to IPFS...' : '📤 Upload to IPFS & Save'}
-                  </Button>
+                  <div className="flex gap-3">
+                    <Button
+                      onClick={downloadGeneratedImage}
+                      disabled={isGenerating || isUploading}
+                      className="flex-1 bg-blue-600 hover:bg-blue-700"
+                    >
+                      📥 Download
+                    </Button>
+                    <Button
+                      onClick={uploadToIPFS}
+                      disabled={isUploading}
+                      className="flex-1 bg-green-600 hover:bg-green-700"
+                    >
+                      {isUploading ? '📤 Uploading...' : '📤 Upload to IPFS'}
+                    </Button>
+                  </div>
                 )}
               </div>
 
