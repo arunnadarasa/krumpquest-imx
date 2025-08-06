@@ -1,9 +1,8 @@
 import { getDefaultConfig } from '@rainbow-me/rainbowkit';
 import { mainnet, polygon, optimism, arbitrum, base } from 'wagmi/chains';
-import { defineChain } from 'viem';
 
-// Define Story Aeneid Testnet
-export const storyAeneidTestnet = defineChain({
+// Story Aeneid Testnet configuration as a simple object
+const storyAeneidTestnet = {
   id: 1315,
   name: 'Story Aeneid Testnet',
   nativeCurrency: {
@@ -23,12 +22,11 @@ export const storyAeneidTestnet = defineChain({
     },
   },
   testnet: true,
-});
+} as const;
 
-// Using a placeholder for now - the actual project ID is stored securely in Supabase
 export const wagmiConfig = getDefaultConfig({
   appName: 'Krump Quest',
-  projectId: '2f5a6cde-6d62-4faa-8ae2-c4ae70d30c78', // Placeholder - secure ID fetched dynamically
+  projectId: '2f5a6cde-6d62-4faa-8ae2-c4ae70d30c78',
   chains: [mainnet, polygon, optimism, arbitrum, base, storyAeneidTestnet],
   ssr: false,
 });
