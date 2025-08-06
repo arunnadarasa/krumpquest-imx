@@ -221,6 +221,13 @@ export default function DigitalKollectibles() {
             <p className="text-gray-300 mt-1">Create AI-powered artwork and mint on IPFS</p>
           </div>
           <div className="flex items-center gap-4">
+            <Button
+              onClick={() => window.open('https://cloud.google.com/application/web3/faucet/story/aeneid', '_blank')}
+              variant="outline"
+              className="bg-blue-600/20 border-blue-500/50 text-blue-300 hover:bg-blue-600/30 hover:text-blue-200"
+            >
+              💧 Get Testnet Tokens
+            </Button>
             <WalletConnect />
             <Button onClick={() => dispatch(setGamePhase('world_map'))} variant="outline">
               ← Back to Map
