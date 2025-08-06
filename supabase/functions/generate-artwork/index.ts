@@ -12,9 +12,19 @@ serve(async (req) => {
   }
 
   try {
-    const { prompt, style, wallet_address } = await req.json()
+    const { 
+      prompt, 
+      style, 
+      wallet_address, 
+      aspectRatio = '1:1',
+      width = 512,
+      height = 512,
+      characterGender = 'neutral',
+      subjectType = 'human',
+      animalSpecies = ''
+    } = await req.json()
 
-    if (!prompt || !wallet_address) {
+    if (!wallet_address) {
       return new Response(
         JSON.stringify({ error: 'Missing required parameters' }),
         { 
@@ -35,17 +45,36 @@ serve(async (req) => {
       )
     }
 
-    // Style-specific prompt enhancements
-    const stylePrompts = {
-      anime: 'anime style, detailed, vibrant colors, high quality',
-      cyberpunk: 'cyberpunk style, neon lights, futuristic, dark atmosphere',
-      street_art: 'street art style, graffiti, urban, bold colors',
-      neon: 'neon art style, glowing effects, electric colors, synthwave',
-      pixel_art: '8-bit pixel art style, retro gaming, crisp pixels',
-      graffiti: 'graffiti art style, spray paint, street culture, bold'
+    // Fixed base Krump prompt
+    const baseKrumpPrompt = "A dynamic Krump dancer in mid-performance, wearing a snapback cap, oversized baseball jacket, black jeans, and Timberland boots. Black and white comic book art style, high contrast ink illustrations, bold linework, dramatic shadows. Urban street dance pose with expressive body language, capturing the intensity and energy of Krump dancing. Comic book panel aesthetic with strong black outlines and crosshatching details."
+    
+    // Character modifications
+    let characterPrompt = baseKrumpPrompt
+    if (subjectType === 'animal' && animalSpecies) {
+      characterPrompt = characterPrompt.replace('Krump dancer', `Krump-dancing ${animalSpecies}`)
+    } else if (characterGender !== 'neutral') {
+      characterPrompt = characterPrompt.replace('Krump dancer', `${characterGender} Krump dancer`)
     }
-
-    const enhancedPrompt = `${prompt}, ${stylePrompts[style as keyof typeof stylePrompts] || stylePrompts.anime}`
+    
+    // Style-specific enhancements
+    const styleEnhancements = {
+      comic_book: 'professional comic book illustration, masterful ink work, dramatic composition',
+      urban_sketch: 'urban street sketch style, rough pencil strokes, gritty realism',
+      street_art: 'street art aesthetic, spray paint effects, wall mural style',
+      noir: 'film noir style, dramatic lighting, deep shadows and highlights',
+      graphic_novel: 'graphic novel illustration, cinematic composition, detailed lineart',
+      minimalist: 'minimalist black and white art, clean lines, focused composition'
+    }
+    
+    // Negative prompt for quality control
+    const negativePrompt = "color, photorealistic, blurry, low quality, anime style, cartoon style, 3D render, painting, watercolor, sketchy lines, weak contrast, multiple people, crowded scene"
+    
+    // Construct final prompt
+    let enhancedPrompt = characterPrompt
+    if (prompt && prompt.trim()) {
+      enhancedPrompt += `, ${prompt.trim()}`
+    }
+    enhancedPrompt += `, ${styleEnhancements[style as keyof typeof styleEnhancements] || styleEnhancements.comic_book}`
 
     console.log('Generating artwork with Stable Horde API...')
     console.log('Enhanced prompt:', enhancedPrompt)
@@ -60,11 +89,11 @@ serve(async (req) => {
       body: JSON.stringify({
         prompt: enhancedPrompt,
         params: {
-          width: 512,
-          height: 512,
-          steps: 20,
-          cfg_scale: 7,
-          sampler_name: 'k_euler_a',
+          width: width,
+          height: height,
+          steps: 28, // Recommended 25-30
+          cfg_scale: 8, // Recommended 7-9
+          sampler_name: 'DPM++ 2M Karras', // Recommended sampler
         },
         nsfw: false,
         censor_nsfw: true,

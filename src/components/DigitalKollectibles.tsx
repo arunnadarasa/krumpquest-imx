@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
+import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import { useAppDispatch, useAppSelector } from '@/hooks/useAppSelector';
 import { setGamePhase } from '@/store/slices/gameSlice';
@@ -23,14 +24,34 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAccount } from 'wagmi';
 import WalletConnect from './WalletConnect';
 
-const artStyles = [
-  { value: 'anime', label: '🎌 Anime' },
-  { value: 'cyberpunk', label: '🤖 Cyberpunk' },
-  { value: 'street_art', label: '🎨 Street Art' },
-  { value: 'neon', label: '💫 Neon' },
-  { value: 'pixel_art', label: '🕹️ Pixel Art' },
-  { value: 'graffiti', label: '🎯 Graffiti' },
+const aspectRatios = [
+  { value: '16:9', label: '16:9 Landscape', width: 768, height: 432 },
+  { value: '1:1', label: '1:1 Square', width: 512, height: 512 },
+  { value: '9:16', label: '9:16 Portrait', width: 432, height: 768 },
 ];
+
+const characterGenders = [
+  { value: 'male', label: 'Male' },
+  { value: 'female', label: 'Female' },
+  { value: 'neutral', label: 'Gender Neutral' },
+];
+
+const subjectTypes = [
+  { value: 'human', label: 'Human' },
+  { value: 'animal', label: 'Animal' },
+];
+
+const artStyles = [
+  { value: 'comic_book', label: '📚 Comic Book (Default)', isDefault: true },
+  { value: 'urban_sketch', label: '🏙️ Urban Sketch' },
+  { value: 'street_art', label: '🎨 Street Art' },
+  { value: 'noir', label: '🎭 Film Noir' },
+  { value: 'graphic_novel', label: '📖 Graphic Novel' },
+  { value: 'minimalist', label: '⚪ Minimalist' },
+];
+
+// Fixed base prompt - cannot be changed
+const BASE_KRUMP_PROMPT = "A dynamic Krump dancer in mid-performance, wearing a snapback cap, oversized baseball jacket, black jeans, and Timberland boots. Black and white comic book art style, high contrast ink illustrations, bold linework, dramatic shadows. Urban street dance pose with expressive body language, capturing the intensity and energy of Krump dancing. Comic book panel aesthetic with strong black outlines and crosshatching details.";
 
 export default function DigitalKollectibles() {
   const dispatch = useAppDispatch();
@@ -45,7 +66,11 @@ export default function DigitalKollectibles() {
   } = useAppSelector(state => state.kollectibles);
   
   const [prompt, setPrompt] = useState('');
-  const [selectedStyle, setSelectedStyle] = useState('anime');
+  const [selectedStyle, setSelectedStyle] = useState('comic_book');
+  const [aspectRatio, setAspectRatio] = useState('1:1');
+  const [characterGender, setCharacterGender] = useState('neutral');
+  const [subjectType, setSubjectType] = useState('human');
+  const [animalSpecies, setAnimalSpecies] = useState('');
 
   useEffect(() => {
     if (address && address !== currentWalletAddress) {
@@ -88,10 +113,18 @@ export default function DigitalKollectibles() {
     dispatch(clearError());
 
     try {
+      const selectedAspectRatio = aspectRatios.find(ar => ar.value === aspectRatio);
+      
       const { data, error } = await supabase.functions.invoke('generate-artwork', {
         body: {
           prompt: prompt.trim(),
           style: selectedStyle,
+          aspectRatio: aspectRatio,
+          width: selectedAspectRatio?.width || 512,
+          height: selectedAspectRatio?.height || 512,
+          characterGender,
+          subjectType,
+          animalSpecies: subjectType === 'animal' ? animalSpecies : '',
           wallet_address: address.toLowerCase()
         }
       });
@@ -126,6 +159,10 @@ export default function DigitalKollectibles() {
           imageUrl: generatedImageUrl,
           prompt: prompt.trim(),
           style: selectedStyle,
+          aspectRatio,
+          characterGender,
+          subjectType,
+          animalSpecies: subjectType === 'animal' ? animalSpecies : '',
           wallet_address: address.toLowerCase()
         }
       });
@@ -201,32 +238,110 @@ export default function DigitalKollectibles() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
+              {/* Base Prompt Display */}
+              <div className="p-4 bg-gray-700/50 rounded-lg border border-purple-500/30">
+                <Label className="text-white text-sm font-medium">🎯 Base Krump Prompt (Fixed)</Label>
+                <p className="text-gray-300 text-sm mt-2 leading-relaxed">
+                  {BASE_KRUMP_PROMPT}
+                </p>
+              </div>
+
+              {/* Character Customization */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label className="text-white">Character Gender</Label>
+                  <Select value={characterGender} onValueChange={setCharacterGender} disabled={isGenerating || isUploading}>
+                    <SelectTrigger className="bg-gray-700 border-gray-600 text-white">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {characterGenders.map((gender) => (
+                        <SelectItem key={gender.value} value={gender.value}>
+                          {gender.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-white">Subject Type</Label>
+                  <Select value={subjectType} onValueChange={setSubjectType} disabled={isGenerating || isUploading}>
+                    <SelectTrigger className="bg-gray-700 border-gray-600 text-white">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {subjectTypes.map((type) => (
+                        <SelectItem key={type.value} value={type.value}>
+                          {type.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {/* Animal Species Input */}
+              {subjectType === 'animal' && (
+                <div className="space-y-2">
+                  <Label htmlFor="species" className="text-white">Animal Species</Label>
+                  <Input
+                    id="species"
+                    value={animalSpecies}
+                    onChange={(e) => setAnimalSpecies(e.target.value)}
+                    placeholder="e.g., lion, wolf, eagle, cat..."
+                    className="bg-gray-700 border-gray-600 text-white"
+                    disabled={isGenerating || isUploading}
+                  />
+                </div>
+              )}
+
+              {/* Format Settings */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label className="text-white">Aspect Ratio</Label>
+                  <Select value={aspectRatio} onValueChange={setAspectRatio} disabled={isGenerating || isUploading}>
+                    <SelectTrigger className="bg-gray-700 border-gray-600 text-white">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {aspectRatios.map((ratio) => (
+                        <SelectItem key={ratio.value} value={ratio.value}>
+                          {ratio.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-white">Art Style</Label>
+                  <Select value={selectedStyle} onValueChange={setSelectedStyle} disabled={isGenerating || isUploading}>
+                    <SelectTrigger className="bg-gray-700 border-gray-600 text-white">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {artStyles.map((style) => (
+                        <SelectItem key={style.value} value={style.value}>
+                          {style.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {/* Additional Details */}
               <div className="space-y-2">
-                <Label htmlFor="prompt" className="text-white">Artwork Prompt</Label>
-                <Input
+                <Label htmlFor="prompt" className="text-white">Additional Details (Optional)</Label>
+                <Textarea
                   id="prompt"
                   value={prompt}
                   onChange={(e) => setPrompt(e.target.value)}
-                  placeholder="Describe your artwork... e.g., 'a cyberpunk krump dancer in neon city'"
-                  className="bg-gray-700 border-gray-600 text-white"
+                  placeholder="Add specific details to enhance the base Krump scene... e.g., 'in a graffiti-covered alley at sunset'"
+                  className="bg-gray-700 border-gray-600 text-white min-h-[80px]"
                   disabled={isGenerating || isUploading}
                 />
-              </div>
-
-              <div className="space-y-2">
-                <Label className="text-white">Art Style</Label>
-                <Select value={selectedStyle} onValueChange={setSelectedStyle} disabled={isGenerating || isUploading}>
-                  <SelectTrigger className="bg-gray-700 border-gray-600 text-white">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {artStyles.map((style) => (
-                      <SelectItem key={style.value} value={style.value}>
-                        {style.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
               </div>
 
               {error && (
@@ -238,10 +353,10 @@ export default function DigitalKollectibles() {
               <div className="space-y-3">
                 <Button
                   onClick={generateArtwork}
-                  disabled={isGenerating || isUploading || !prompt.trim()}
+                  disabled={isGenerating || isUploading || (subjectType === 'animal' && !animalSpecies.trim())}
                   className="w-full bg-purple-600 hover:bg-purple-700"
                 >
-                  {isGenerating ? '🎨 Generating...' : '🎨 Generate Artwork'}
+                  {isGenerating ? '🎨 Generating...' : '🎨 Generate Krump Artwork'}
                 </Button>
 
                 {generatedImageUrl && (
