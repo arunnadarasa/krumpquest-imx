@@ -140,6 +140,7 @@ serve(async (req) => {
     
     // Convert to base64 in safe chunks to avoid stack overflow
     let base64 = ''
+    let imageUrl = ''
     const chunkSize = 1024 // Smaller chunks for safety
     
     try {
@@ -149,7 +150,7 @@ serve(async (req) => {
         base64 += btoa(chunkString)
       }
       
-      const imageUrl = `data:${contentType};base64,${base64}`
+      imageUrl = `data:${contentType};base64,${base64}`
       console.log('Image generated successfully with Stability AI Core, base64 length:', base64.length)
       console.log('Data URL preview:', imageUrl.substring(0, 100) + '...')
       
