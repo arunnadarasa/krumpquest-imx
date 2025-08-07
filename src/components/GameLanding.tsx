@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { useAppDispatch } from '@/hooks/useAppSelector';
 import { startNewGame, setGamePhase } from '@/store/slices/gameSlice';
-import WalletConnect from '@/components/WalletConnect';
+
 import VideoHero from '@/components/VideoHero';
 
 const GameLanding = () => {
@@ -137,9 +137,6 @@ const GameLanding = () => {
             </p>
             
             <div className="flex flex-col items-center gap-4 animate-scale-in">
-              <div className="w-full max-w-sm">
-                <WalletConnect />
-              </div>
               <Button 
                 variant="premium" 
                 size="xxl"

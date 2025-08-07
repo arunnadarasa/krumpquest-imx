@@ -4,9 +4,12 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Copy, ExternalLink, Wallet } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useEffect } from 'react';
+import { useSwitchChain } from 'wagmi';
 
 export default function WalletConnect() {
   const { toast } = useToast();
+  const { switchChain } = useSwitchChain();
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text).then(() => {
@@ -42,6 +45,13 @@ export default function WalletConnect() {
           chain &&
           (!authenticationStatus ||
             authenticationStatus === 'authenticated');
+
+        // Auto-switch to Story Aeneid Testnet when connected to a different network
+        useEffect(() => {
+          if (connected && chain && chain.id !== 1315 && switchChain) {
+            switchChain({ chainId: 1315 });
+          }
+        }, [connected, chain, switchChain]);
 
         return (
           <div

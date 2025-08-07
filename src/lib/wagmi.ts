@@ -27,6 +27,6 @@ const storyAeneidTestnet = {
 export const wagmiConfig = getDefaultConfig({
   appName: 'Krump Quest',
   projectId: '2f5a6cde-6d62-4faa-8ae2-c4ae70d30c78',
-  chains: [mainnet, polygon, optimism, arbitrum, base, storyAeneidTestnet],
+  chains: [storyAeneidTestnet, mainnet, polygon, optimism, arbitrum, base],
   ssr: false,
 });
