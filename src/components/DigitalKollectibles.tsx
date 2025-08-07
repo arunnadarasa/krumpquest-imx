@@ -247,7 +247,7 @@ export default function DigitalKollectibles() {
   };
 
   const mintOnStory = async () => {
-    if (!generatedImageUrl || !address) {
+    if ((!generatedSupabaseUrl && !generatedImageUrl) || !address) {
       toast.error('No artwork to mint');
       return;
     }
@@ -256,16 +256,15 @@ export default function DigitalKollectibles() {
     dispatch(clearError());
 
     try {
+      // Prioritize Supabase URL over base64 to avoid memory issues
+      const imageUrlToUpload = generatedSupabaseUrl || generatedImageUrl;
+      
       // First, store the image in Supabase and create a kollectible record
       const { data: uploadData, error: uploadError } = await supabase.functions.invoke('upload-to-ipfs', {
         body: {
-          imageUrl: generatedImageUrl,
+          imageUrl: imageUrlToUpload,
           prompt: prompt.trim(),
           style: selectedStyle,
-          aspectRatio,
-          characterGender,
-          subjectType,
-          animalSpecies: subjectType === 'animal' ? animalSpecies : '',
           wallet_address: address.toLowerCase()
         }
       });

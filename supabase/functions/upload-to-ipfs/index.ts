@@ -15,9 +15,26 @@ serve(async (req) => {
   try {
     const { imageUrl, prompt, style, wallet_address } = await req.json()
 
+    console.log('Upload-to-IPFS received parameters:', { 
+      hasImageUrl: !!imageUrl, 
+      hasPrompt: !!prompt, 
+      hasWalletAddress: !!wallet_address,
+      hasStyle: !!style,
+      imageUrlType: imageUrl?.startsWith('data:') ? 'base64' : 'url'
+    })
+
     if (!imageUrl || !prompt || !wallet_address) {
+      const missingParams = []
+      if (!imageUrl) missingParams.push('imageUrl')
+      if (!prompt) missingParams.push('prompt')
+      if (!wallet_address) missingParams.push('wallet_address')
+      
+      console.error('Missing required parameters:', missingParams)
       return new Response(
-        JSON.stringify({ error: 'Missing required parameters' }),
+        JSON.stringify({ 
+          error: 'Missing required parameters', 
+          missing: missingParams 
+        }),
         { 
           status: 400, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
