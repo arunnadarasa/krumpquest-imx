@@ -252,6 +252,9 @@ export default function DigitalKollectibles() {
       return;
     }
 
+    // Create a fallback prompt if user didn't provide one
+    const finalPrompt = prompt.trim() || `A ${selectedStyle.toLowerCase()} style artwork featuring a ${subjectType === 'animal' ? animalSpecies : subjectType} character with ${characterGender} characteristics`;
+
     dispatch(setUploading(true));
     dispatch(clearError());
 
@@ -263,7 +266,7 @@ export default function DigitalKollectibles() {
       const { data: uploadData, error: uploadError } = await supabase.functions.invoke('upload-to-ipfs', {
         body: {
           imageUrl: imageUrlToUpload,
-          prompt: prompt.trim(),
+          prompt: finalPrompt,
           style: selectedStyle,
           wallet_address: address.toLowerCase()
         }
