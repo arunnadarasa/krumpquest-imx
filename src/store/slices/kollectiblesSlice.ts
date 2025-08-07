@@ -25,6 +25,7 @@ interface KollectiblesState {
   currentWalletAddress: string | null;
   error: string | null;
   generatedImageUrl: string | null;
+  generatedSupabaseUrl: string | null;
 }
 
 const initialState: KollectiblesState = {
@@ -34,6 +35,7 @@ const initialState: KollectiblesState = {
   currentWalletAddress: null,
   error: null,
   generatedImageUrl: null,
+  generatedSupabaseUrl: null,
 };
 
 const kollectiblesSlice = createSlice({
@@ -49,6 +51,7 @@ const kollectiblesSlice = createSlice({
       if (action.payload) {
         state.error = null;
         state.generatedImageUrl = null;
+        state.generatedSupabaseUrl = null;
       }
     },
     
@@ -65,8 +68,9 @@ const kollectiblesSlice = createSlice({
       state.isUploading = false;
     },
     
-    setGeneratedImage: (state, action: PayloadAction<string>) => {
-      state.generatedImageUrl = action.payload;
+    setGeneratedImage: (state, action: PayloadAction<{imageUrl: string; supabaseUrl?: string}>) => {
+      state.generatedImageUrl = action.payload.imageUrl;
+      state.generatedSupabaseUrl = action.payload.supabaseUrl || null;
       state.isGenerating = false;
     },
     
@@ -77,6 +81,7 @@ const kollectiblesSlice = createSlice({
     addKollectible: (state, action: PayloadAction<Kollectible>) => {
       state.kollectibles.unshift(action.payload);
       state.generatedImageUrl = null;
+      state.generatedSupabaseUrl = null;
       state.isUploading = false;
     },
     
@@ -86,6 +91,7 @@ const kollectiblesSlice = createSlice({
     
     clearGeneratedImage: (state) => {
       state.generatedImageUrl = null;
+      state.generatedSupabaseUrl = null;
     }
   }
 });

@@ -64,7 +64,8 @@ export default function DigitalKollectibles() {
     isGenerating, 
     isUploading, 
     error, 
-    generatedImageUrl, 
+    generatedImageUrl,
+    generatedSupabaseUrl,
     currentWalletAddress 
   } = useAppSelector(state => state.kollectibles);
   
@@ -138,7 +139,10 @@ export default function DigitalKollectibles() {
           toast.warning('Large image generated - may take longer to display');
         }
         
-        dispatch(setGeneratedImage(data.imageUrl));
+        dispatch(setGeneratedImage({
+          imageUrl: data.imageUrl,
+          supabaseUrl: data.supabaseImageUrl
+        }));
         toast.success('Artwork generated successfully!');
       } else {
         throw new Error('No image URL received');
@@ -529,14 +533,20 @@ export default function DigitalKollectibles() {
               </div>
 
               {/* Generated Image Preview */}
-              {generatedImageUrl && (
+              {(generatedSupabaseUrl || generatedImageUrl) && (
                 <div className="mt-6">
                   <Label className="text-white mb-2 block">Generated Artwork</Label>
                   <div className="relative">
                     <img
-                      src={generatedImageUrl}
+                      src={generatedSupabaseUrl || generatedImageUrl}
                       alt="Generated artwork"
                       className="w-full rounded-lg border border-purple-500/30"
+                      onError={(e) => {
+                        // Fallback to base64 if Supabase URL fails
+                        if (generatedSupabaseUrl && generatedImageUrl) {
+                          e.currentTarget.src = generatedImageUrl;
+                        }
+                      }}
                     />
                     <Badge className="absolute top-2 right-2 bg-purple-600">
                       Ready to Upload
