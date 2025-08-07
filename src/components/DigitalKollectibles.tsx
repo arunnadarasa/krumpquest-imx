@@ -100,11 +100,6 @@ export default function DigitalKollectibles() {
   };
 
   const generateArtwork = async () => {
-    if (!prompt.trim()) {
-      toast.error('Please enter a prompt for your artwork');
-      return;
-    }
-
     if (!isConnected || !address) {
       toast.error('Please connect your wallet first');
       return;
