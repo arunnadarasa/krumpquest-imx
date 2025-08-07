@@ -24,6 +24,7 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { useAccount } from 'wagmi';
 import WalletConnect from './WalletConnect';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const aspectRatios = [
   { value: '16:9', label: '16:9 Landscape', width: 768, height: 432 },
@@ -57,6 +58,7 @@ const BASE_KRUMP_PROMPT = "A dynamic Krump dancer in mid-performance, wearing a 
 export default function DigitalKollectibles() {
   const dispatch = useAppDispatch();
   const { address, isConnected } = useAccount();
+  const isMobile = useIsMobile();
   const { 
     kollectibles, 
     isGenerating, 
@@ -305,23 +307,28 @@ export default function DigitalKollectibles() {
 
   if (!isConnected) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-gray-900 via-purple-900 to-gray-900 p-4">
-        <div className="max-w-4xl mx-auto pt-8">
-          <div className="flex items-center justify-between mb-8">
-            <h1 className="text-3xl font-bold text-white">🎨 Digital Kollectibles</h1>
-            <Button onClick={() => dispatch(setGamePhase('world_map'))} variant="outline">
+      <div className="min-h-screen bg-gradient-to-b from-gray-900 via-purple-900 to-gray-900 p-2 sm:p-4">
+        <div className="max-w-4xl mx-auto pt-4 sm:pt-8">
+          <div className={`flex ${isMobile ? 'flex-col gap-4' : 'items-center justify-between'} mb-6 sm:mb-8`}>
+            <h1 className={`${isMobile ? 'text-2xl' : 'text-3xl'} font-bold text-white`}>🎨 Digital Kollectibles</h1>
+            <Button 
+              onClick={() => dispatch(setGamePhase('world_map'))} 
+              variant="outline"
+              size={isMobile ? "sm" : "default"}
+              className={isMobile ? "self-start" : ""}
+            >
               ← Back to Map
             </Button>
           </div>
 
           <Card className="bg-gray-800/90 border-purple-500/30">
             <CardHeader className="text-center">
-              <CardTitle className="text-2xl text-white">Connect Your Wallet</CardTitle>
+              <CardTitle className={`${isMobile ? 'text-xl' : 'text-2xl'} text-white`}>Connect Your Wallet</CardTitle>
               <CardDescription className="text-gray-300">
                 Connect your wallet to create and manage your digital art kollectibles
               </CardDescription>
             </CardHeader>
-            <CardContent className="flex justify-center py-8">
+            <CardContent className="flex justify-center py-6 sm:py-8">
               <WalletConnect />
             </CardContent>
           </Card>
@@ -331,30 +338,37 @@ export default function DigitalKollectibles() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-900 via-purple-900 to-gray-900 p-4">
-      <div className="max-w-6xl mx-auto pt-8">
+    <div className="min-h-screen bg-gradient-to-b from-gray-900 via-purple-900 to-gray-900 p-2 sm:p-4">
+      <div className="max-w-6xl mx-auto pt-4 sm:pt-8">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
+        <div className={`flex ${isMobile ? 'flex-col gap-4' : 'items-center justify-between'} mb-6 sm:mb-8`}>
           <div>
-            <h1 className="text-3xl font-bold text-white">🎨 Digital Kollectibles</h1>
-            <p className="text-gray-300 mt-1">Create AI-powered artwork and mint on Story Protocol</p>
+            <h1 className={`${isMobile ? 'text-2xl' : 'text-3xl'} font-bold text-white`}>🎨 Digital Kollectibles</h1>
+            <p className={`text-gray-300 mt-1 ${isMobile ? 'text-sm' : ''}`}>Create AI-powered artwork and mint on Story Protocol</p>
           </div>
-          <div className="flex items-center gap-4">
+          <div className={`flex ${isMobile ? 'flex-col w-full gap-2' : 'items-center gap-4'}`}>
             <Button
               onClick={() => window.open('https://cloud.google.com/application/web3/faucet/story/aeneid', '_blank')}
               variant="outline"
-              className="bg-blue-600/20 border-blue-500/50 text-blue-300 hover:bg-blue-600/30 hover:text-blue-200"
+              size={isMobile ? "sm" : "default"}
+              className={`bg-blue-600/20 border-blue-500/50 text-blue-300 hover:bg-blue-600/30 hover:text-blue-200 ${isMobile ? 'text-xs' : ''}`}
             >
-              💧 Get Testnet Tokens
+              💧 {isMobile ? 'Testnet' : 'Get Testnet Tokens'}
             </Button>
-            <WalletConnect />
-            <Button onClick={() => dispatch(setGamePhase('world_map'))} variant="outline">
+            <div className={isMobile ? 'w-full' : ''}>
+              <WalletConnect />
+            </div>
+            <Button 
+              onClick={() => dispatch(setGamePhase('world_map'))} 
+              variant="outline"
+              size={isMobile ? "sm" : "default"}
+            >
               ← Back to Map
             </Button>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className={`grid grid-cols-1 ${isMobile ? 'gap-4' : 'lg:grid-cols-2 gap-6'}`}>
           {/* Art Generation Panel */}
           <Card className="bg-gray-800/90 border-purple-500/30">
             <CardHeader>
@@ -373,11 +387,11 @@ export default function DigitalKollectibles() {
               </div>
 
               {/* Character Customization */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className={`grid ${isMobile ? 'grid-cols-1 gap-3' : 'grid-cols-1 md:grid-cols-2 gap-4'}`}>
                 <div className="space-y-2">
-                  <Label className="text-white">Character Gender</Label>
+                  <Label className={`text-white ${isMobile ? 'text-sm' : ''}`}>Character Gender</Label>
                   <Select value={characterGender} onValueChange={setCharacterGender} disabled={isGenerating || isUploading}>
-                    <SelectTrigger className="bg-gray-700 border-gray-600 text-white">
+                    <SelectTrigger className={`bg-gray-700 border-gray-600 text-white ${isMobile ? 'h-12' : ''}`}>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -391,9 +405,9 @@ export default function DigitalKollectibles() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label className="text-white">Subject Type</Label>
+                  <Label className={`text-white ${isMobile ? 'text-sm' : ''}`}>Subject Type</Label>
                   <Select value={subjectType} onValueChange={setSubjectType} disabled={isGenerating || isUploading}>
-                    <SelectTrigger className="bg-gray-700 border-gray-600 text-white">
+                    <SelectTrigger className={`bg-gray-700 border-gray-600 text-white ${isMobile ? 'h-12' : ''}`}>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -410,24 +424,24 @@ export default function DigitalKollectibles() {
               {/* Animal Species Input */}
               {subjectType === 'animal' && (
                 <div className="space-y-2">
-                  <Label htmlFor="species" className="text-white">Animal Species</Label>
+                  <Label htmlFor="species" className={`text-white ${isMobile ? 'text-sm' : ''}`}>Animal Species</Label>
                   <Input
                     id="species"
                     value={animalSpecies}
                     onChange={(e) => setAnimalSpecies(e.target.value)}
                     placeholder="e.g., lion, wolf, eagle, cat..."
-                    className="bg-gray-700 border-gray-600 text-white"
+                    className={`bg-gray-700 border-gray-600 text-white ${isMobile ? 'h-12' : ''}`}
                     disabled={isGenerating || isUploading}
                   />
                 </div>
               )}
 
               {/* Format Settings */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className={`grid ${isMobile ? 'grid-cols-1 gap-3' : 'grid-cols-1 md:grid-cols-2 gap-4'}`}>
                 <div className="space-y-2">
-                  <Label className="text-white">Aspect Ratio</Label>
+                  <Label className={`text-white ${isMobile ? 'text-sm' : ''}`}>Aspect Ratio</Label>
                   <Select value={aspectRatio} onValueChange={setAspectRatio} disabled={isGenerating || isUploading}>
-                    <SelectTrigger className="bg-gray-700 border-gray-600 text-white">
+                    <SelectTrigger className={`bg-gray-700 border-gray-600 text-white ${isMobile ? 'h-12' : ''}`}>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -441,9 +455,9 @@ export default function DigitalKollectibles() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label className="text-white">Art Style</Label>
+                  <Label className={`text-white ${isMobile ? 'text-sm' : ''}`}>Art Style</Label>
                   <Select value={selectedStyle} onValueChange={setSelectedStyle} disabled={isGenerating || isUploading}>
-                    <SelectTrigger className="bg-gray-700 border-gray-600 text-white">
+                    <SelectTrigger className={`bg-gray-700 border-gray-600 text-white ${isMobile ? 'h-12' : ''}`}>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -459,13 +473,13 @@ export default function DigitalKollectibles() {
 
               {/* Additional Details */}
               <div className="space-y-2">
-                <Label htmlFor="prompt" className="text-white">Additional Details (Optional)</Label>
+                <Label htmlFor="prompt" className={`text-white ${isMobile ? 'text-sm' : ''}`}>Additional Details (Optional)</Label>
                 <Textarea
                   id="prompt"
                   value={prompt}
                   onChange={(e) => setPrompt(e.target.value)}
                   placeholder="Add specific details to enhance the base Krump scene... e.g., 'in a graffiti-covered alley at sunset'"
-                  className="bg-gray-700 border-gray-600 text-white min-h-[80px]"
+                  className={`bg-gray-700 border-gray-600 text-white ${isMobile ? 'min-h-[60px]' : 'min-h-[80px]'}`}
                   disabled={isGenerating || isUploading}
                 />
               </div>
@@ -486,18 +500,20 @@ export default function DigitalKollectibles() {
                 </Button>
 
                 {generatedImageUrl && (
-                  <div className="flex gap-3">
+                  <div className={`flex ${isMobile ? 'flex-col gap-2' : 'gap-3'}`}>
                     <Button
                       onClick={downloadGeneratedImage}
                       disabled={isGenerating || isUploading}
-                      className="flex-1 bg-blue-600 hover:bg-blue-700"
+                      className={`${isMobile ? 'w-full' : 'flex-1'} bg-blue-600 hover:bg-blue-700 ${isMobile ? 'h-12' : ''}`}
+                      size={isMobile ? "default" : "default"}
                     >
                       📥 Download
                     </Button>
                     <Button
                       onClick={mintOnStory}
                       disabled={isUploading}
-                      className="flex-1 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
+                      className={`${isMobile ? 'w-full' : 'flex-1'} bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 ${isMobile ? 'h-12' : ''}`}
+                      size={isMobile ? "default" : "default"}
                     >
                       {isUploading ? (
                         <>
@@ -546,22 +562,22 @@ export default function DigitalKollectibles() {
                   <p className="text-sm mt-1">Create your first artwork above!</p>
                 </div>
               ) : (
-                <div className="space-y-4 max-h-96 overflow-y-auto">
+                <div className={`space-y-3 ${isMobile ? 'max-h-80' : 'max-h-96'} overflow-y-auto`}>
                   {kollectibles.map((kollectible) => (
-                    <div key={kollectible.id} className="bg-gray-700/50 rounded-lg p-4">
-                      <div className="flex gap-3">
+                    <div key={kollectible.id} className={`bg-gray-700/50 rounded-lg ${isMobile ? 'p-3' : 'p-4'}`}>
+                      <div className={`flex ${isMobile ? 'flex-col gap-2' : 'gap-3'}`}>
                         {kollectible.pinata_url && (
                           <img
                             src={kollectible.pinata_url}
                             alt={kollectible.prompt}
-                            className="w-16 h-16 rounded object-cover"
+                            className={`${isMobile ? 'w-full h-32' : 'w-16 h-16'} rounded object-cover ${isMobile ? 'mb-2' : ''}`}
                           />
                         )}
                         <div className="flex-1 min-w-0">
-                          <p className="text-white text-sm font-medium truncate">
-                            {kollectible.prompt}
+                          <p className={`text-white ${isMobile ? 'text-sm' : 'text-sm'} font-medium ${isMobile ? '' : 'truncate'}`}>
+                            {kollectible.prompt || 'Generated artwork'}
                           </p>
-                          <div className="flex items-center gap-2 mt-1">
+                          <div className={`flex ${isMobile ? 'flex-wrap' : 'items-center'} gap-2 mt-1`}>
                             <Badge variant="outline" className="text-xs">
                               {kollectible.style}
                             </Badge>
@@ -574,14 +590,14 @@ export default function DigitalKollectibles() {
                               {new Date(kollectible.created_at).toLocaleDateString()}
                             </span>
                           </div>
-                          <div className="flex items-center gap-2 mt-2">
+                          <div className={`flex ${isMobile ? 'flex-col gap-2' : 'items-center gap-2'} mt-2`}>
                             {kollectible.pinata_url && (
                               <>
                                 <a
                                   href={kollectible.pinata_url}
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  className="text-purple-400 hover:text-purple-300 text-xs"
+                                  className={`text-purple-400 hover:text-purple-300 text-xs ${isMobile ? 'min-h-[44px] flex items-center' : ''}`}
                                 >
                                   🔗 View on IPFS
                                 </a>
@@ -589,7 +605,7 @@ export default function DigitalKollectibles() {
                                   onClick={() => downloadFromIPFS(kollectible)}
                                   variant="outline"
                                   size="sm"
-                                  className="h-6 px-2 text-xs"
+                                  className={`${isMobile ? 'h-10 px-3' : 'h-6 px-2'} text-xs`}
                                 >
                                   <Download className="h-3 w-3 mr-1" />
                                   Download
@@ -601,7 +617,7 @@ export default function DigitalKollectibles() {
                                 onClick={() => window.open(`https://aeneid.storyscan.io/ipa/${kollectible.story_ip_id}`, '_blank')}
                                 variant="outline"
                                 size="sm"
-                                className="h-6 px-2 text-xs bg-blue-600/20 border-blue-500/50 text-blue-300 hover:bg-blue-600/30"
+                                className={`${isMobile ? 'h-10 px-3' : 'h-6 px-2'} text-xs bg-blue-600/20 border-blue-500/50 text-blue-300 hover:bg-blue-600/30`}
                               >
                                 <ExternalLink className="h-3 w-3 mr-1" />
                                 Story
