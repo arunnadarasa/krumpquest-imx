@@ -155,7 +155,7 @@ export default function DigitalKollectibles() {
   };
 
   const downloadGeneratedImage = () => {
-    if (!generatedImageUrl) {
+    if (!generatedSupabaseUrl && !generatedImageUrl) {
       toast.error('No artwork to download');
       return;
     }
@@ -165,40 +165,84 @@ export default function DigitalKollectibles() {
       const timestamp = new Date().toISOString().slice(0, 19).replace(/[:.]/g, '-');
       const filename = `krump-artwork-${selectedStyle.toLowerCase().replace(/\s+/g, '-')}-${timestamp}.jpg`;
       
-      // Use fetch to download the image more reliably
-      fetch(generatedImageUrl)
-        .then(response => {
-          if (!response.ok) {
-            throw new Error(`Failed to fetch image: ${response.status}`);
-          }
-          return response.blob();
-        })
-        .then(blob => {
-          if (blob.size === 0) {
-            throw new Error('Downloaded image is empty');
-          }
-          
-          console.log('Downloaded blob size:', Math.round(blob.size / 1024), 'KB');
-          
-          // Create download link and trigger download
-          const url = URL.createObjectURL(blob);
-          const link = document.createElement('a');
-          link.href = url;
-          link.download = filename;
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
-          URL.revokeObjectURL(url);
-          
-          toast.success('Artwork downloaded successfully!');
-        })
-        .catch(error => {
-          console.error('Download error:', error);
-          toast.error(`Failed to download artwork: ${error.message}`);
-        });
+      // Prioritize Supabase URL, fallback to base64
+      if (generatedSupabaseUrl) {
+        // Download from Supabase URL
+        fetch(generatedSupabaseUrl)
+          .then(response => {
+            if (!response.ok) {
+              throw new Error(`Failed to fetch from Supabase: ${response.status}`);
+            }
+            return response.blob();
+          })
+          .then(blob => {
+            if (blob.size === 0) {
+              throw new Error('Downloaded image is empty');
+            }
+            
+            console.log('Downloaded blob size:', Math.round(blob.size / 1024), 'KB');
+            
+            // Create download link and trigger download
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+            
+            toast.success('Artwork downloaded successfully!');
+          })
+          .catch(error => {
+            console.error('Supabase download error:', error);
+            // Fallback to base64 if Supabase fails
+            if (generatedImageUrl) {
+              downloadFromBase64(generatedImageUrl, filename);
+            } else {
+              toast.error(`Failed to download artwork: ${error.message}`);
+            }
+          });
+      } else if (generatedImageUrl) {
+        // Direct base64 download
+        downloadFromBase64(generatedImageUrl, filename);
+      }
     } catch (error: any) {
       console.error('Download preparation error:', error);
       toast.error(`Failed to prepare download: ${error.message}`);
+    }
+  };
+
+  const downloadFromBase64 = (base64Url: string, filename: string) => {
+    try {
+      // Extract base64 data
+      const base64Data = base64Url.split(',')[1];
+      const byteCharacters = atob(base64Data);
+      const byteNumbers = new Array(byteCharacters.length);
+      
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
+      }
+      
+      const byteArray = new Uint8Array(byteNumbers);
+      const blob = new Blob([byteArray], { type: 'image/jpeg' });
+      
+      console.log('Base64 blob size:', Math.round(blob.size / 1024), 'KB');
+      
+      // Create download link and trigger download
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      
+      toast.success('Artwork downloaded successfully!');
+    } catch (error: any) {
+      console.error('Base64 download error:', error);
+      toast.error(`Failed to download artwork: ${error.message}`);
     }
   };
 
