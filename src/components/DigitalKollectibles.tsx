@@ -693,7 +693,7 @@ export default function DigitalKollectibles() {
                             {kollectible.pinata_url && (
                               <>
                                 <a
-                                  href={kollectible.pinata_url}
+                                  href={kollectible.pinata_url.startsWith('http') ? kollectible.pinata_url : `https://${kollectible.pinata_url}`}
                                   target="_blank"
                                   rel="noopener noreferrer"
                                   className={`text-purple-400 hover:text-purple-300 text-xs ${isMobile ? 'min-h-[44px] flex items-center' : ''}`}

@@ -138,7 +138,9 @@ serve(async (req) => {
 
     const ipfsHash = pinataData.IpfsHash
     const gatewayUrl = Deno.env.get('PINATA_GATEWAY') || 'https://gateway.pinata.cloud'
-    const pinataUrl = `${gatewayUrl}/ipfs/${ipfsHash}`
+    // Ensure the gateway URL has https:// protocol
+    const fullGatewayUrl = gatewayUrl.startsWith('http') ? gatewayUrl : `https://${gatewayUrl}`
+    const pinataUrl = `${fullGatewayUrl}/ipfs/${ipfsHash}`
 
     // Save to database
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
