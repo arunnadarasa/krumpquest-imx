@@ -21,6 +21,7 @@ export type Database = {
           image_url: string | null
           ip_metadata_uri: string | null
           ipfs_hash: string | null
+          is_hidden: boolean
           nft_metadata_uri: string | null
           pinata_url: string | null
           prompt: string
@@ -38,6 +39,7 @@ export type Database = {
           image_url?: string | null
           ip_metadata_uri?: string | null
           ipfs_hash?: string | null
+          is_hidden?: boolean
           nft_metadata_uri?: string | null
           pinata_url?: string | null
           prompt: string
@@ -55,6 +57,7 @@ export type Database = {
           image_url?: string | null
           ip_metadata_uri?: string | null
           ipfs_hash?: string | null
+          is_hidden?: boolean
           nft_metadata_uri?: string | null
           pinata_url?: string | null
           prompt?: string

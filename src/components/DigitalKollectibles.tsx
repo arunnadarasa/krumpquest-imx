@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
-import { ExternalLink, Download, Loader2 } from 'lucide-react';
+import { ExternalLink, Download, Loader2, Eye, EyeOff, X } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '@/hooks/useAppSelector';
 import { setGamePhase } from '@/store/slices/gameSlice';
 import { 
@@ -19,7 +19,10 @@ import {
   setKollectibles, 
   addKollectible, 
   clearError,
-  clearGeneratedImage 
+  clearGeneratedImage,
+  hideKollectible,
+  showKollectible,
+  toggleShowHidden
 } from '@/store/slices/kollectiblesSlice';
 import { supabase } from '@/integrations/supabase/client';
 import { useAccount, useWalletClient, useSwitchChain } from 'wagmi';
@@ -68,7 +71,8 @@ export default function DigitalKollectibles() {
     error, 
     generatedImageUrl,
     generatedSupabaseUrl,
-    currentWalletAddress 
+    currentWalletAddress,
+    showHidden
   } = useAppSelector(state => state.kollectibles);
   
   const [prompt, setPrompt] = useState('');
@@ -398,6 +402,47 @@ export default function DigitalKollectibles() {
     }
   };
 
+  const handleHideKollectible = async (kollectibleId: string) => {
+    try {
+      const { error } = await supabase
+        .from('kollectibles')
+        .update({ is_hidden: true })
+        .eq('id', kollectibleId);
+
+      if (error) throw error;
+
+      dispatch(hideKollectible(kollectibleId));
+      toast.success('Kollectible hidden');
+    } catch (error) {
+      console.error('Error hiding kollectible:', error);
+      toast.error('Failed to hide kollectible');
+    }
+  };
+
+  const handleShowKollectible = async (kollectibleId: string) => {
+    try {
+      const { error } = await supabase
+        .from('kollectibles')
+        .update({ is_hidden: false })
+        .eq('id', kollectibleId);
+
+      if (error) throw error;
+
+      dispatch(showKollectible(kollectibleId));
+      toast.success('Kollectible shown');
+    } catch (error) {
+      console.error('Error showing kollectible:', error);
+      toast.error('Failed to show kollectible');
+    }
+  };
+
+  // Filter kollectibles based on showHidden state
+  const visibleKollectibles = kollectibles.filter(kollectible => 
+    showHidden ? true : !kollectible.is_hidden
+  );
+
+  const hiddenKollectibles = kollectibles.filter(kollectible => kollectible.is_hidden);
+
   if (!isConnected) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-gray-900 via-purple-900 to-gray-900 p-2 sm:p-4">
@@ -649,10 +694,32 @@ export default function DigitalKollectibles() {
           {/* Kollectibles Gallery */}
           <Card className="bg-gray-800/90 border-purple-500/30">
             <CardHeader>
-              <CardTitle className="text-white">🖼️ Your Kollectibles</CardTitle>
-              <CardDescription className="text-gray-300">
-                Your collection of digital art stored on IPFS and minted on Story Protocol
-              </CardDescription>
+              <div className="flex justify-between items-center">
+                <div>
+                  <CardTitle className="text-white">
+                    🖼️ Your Kollectibles ({visibleKollectibles.length})
+                    {hiddenKollectibles.length > 0 && (
+                      <span className="text-sm text-gray-400 ml-2">
+                        ({hiddenKollectibles.length} hidden)
+                      </span>
+                    )}
+                  </CardTitle>
+                  <CardDescription className="text-gray-300">
+                    Your collection of digital art stored on IPFS and minted on Story Protocol
+                  </CardDescription>
+                </div>
+                {hiddenKollectibles.length > 0 && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => dispatch(toggleShowHidden())}
+                    className="flex items-center gap-2"
+                  >
+                    {showHidden ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    {showHidden ? 'Hide Hidden' : 'Show Hidden'}
+                  </Button>
+                )}
+              </div>
             </CardHeader>
             <CardContent>
               {kollectibles.length === 0 ? (
@@ -660,11 +727,27 @@ export default function DigitalKollectibles() {
                   <p>No kollectibles yet.</p>
                   <p className="text-sm mt-1">Create your first artwork above!</p>
                 </div>
+              ) : visibleKollectibles.length === 0 ? (
+                <div className="text-center py-8 text-gray-400">
+                  <p>All kollectibles are hidden.</p>
+                  <p className="text-sm mt-1">Click "Show Hidden" to view them.</p>
+                </div>
               ) : (
                 <div className={`space-y-3 ${isMobile ? 'max-h-80' : 'max-h-96'} overflow-y-auto`}>
-                  {kollectibles.map((kollectible) => (
-                    <div key={kollectible.id} className={`bg-gray-700/50 rounded-lg ${isMobile ? 'p-3' : 'p-4'}`}>
+                  {visibleKollectibles.map((kollectible) => (
+                    <div key={kollectible.id} className={`bg-gray-700/50 rounded-lg ${isMobile ? 'p-3' : 'p-4'} ${kollectible.is_hidden ? 'opacity-60' : ''} relative group`}>
                       <div className={`flex ${isMobile ? 'flex-col gap-2' : 'gap-3'}`}>
+                        {/* Hide button */}
+                        <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={() => kollectible.is_hidden ? handleShowKollectible(kollectible.id) : handleHideKollectible(kollectible.id)}
+                            className="h-6 w-6 p-0"
+                          >
+                            {kollectible.is_hidden ? <Eye className="w-3 h-3" /> : <X className="w-3 h-3" />}
+                          </Button>
+                        </div>
                         {kollectible.pinata_url && (
                           <img
                             src={kollectible.pinata_url}

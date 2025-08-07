@@ -14,6 +14,7 @@ export interface Kollectible {
   nft_metadata_uri?: string;
   ip_metadata_uri?: string;
   style: string;
+  is_hidden?: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -26,6 +27,7 @@ interface KollectiblesState {
   error: string | null;
   generatedImageUrl: string | null;
   generatedSupabaseUrl: string | null;
+  showHidden: boolean;
 }
 
 const initialState: KollectiblesState = {
@@ -36,6 +38,7 @@ const initialState: KollectiblesState = {
   error: null,
   generatedImageUrl: null,
   generatedSupabaseUrl: null,
+  showHidden: false,
 };
 
 const kollectiblesSlice = createSlice({
@@ -92,6 +95,24 @@ const kollectiblesSlice = createSlice({
     clearGeneratedImage: (state) => {
       state.generatedImageUrl = null;
       state.generatedSupabaseUrl = null;
+    },
+    
+    hideKollectible: (state, action: PayloadAction<string>) => {
+      const kollectible = state.kollectibles.find(k => k.id === action.payload);
+      if (kollectible) {
+        kollectible.is_hidden = true;
+      }
+    },
+    
+    showKollectible: (state, action: PayloadAction<string>) => {
+      const kollectible = state.kollectibles.find(k => k.id === action.payload);
+      if (kollectible) {
+        kollectible.is_hidden = false;
+      }
+    },
+    
+    toggleShowHidden: (state) => {
+      state.showHidden = !state.showHidden;
     }
   }
 });
@@ -105,7 +126,10 @@ export const {
   setKollectibles,
   addKollectible,
   clearError,
-  clearGeneratedImage
+  clearGeneratedImage,
+  hideKollectible,
+  showKollectible,
+  toggleShowHidden
 } = kollectiblesSlice.actions;
 
 export default kollectiblesSlice.reducer;
