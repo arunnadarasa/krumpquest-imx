@@ -19,10 +19,16 @@ export type Database = {
           created_at: string
           id: string
           image_url: string | null
+          ip_metadata_uri: string | null
           ipfs_hash: string | null
+          nft_metadata_uri: string | null
           pinata_url: string | null
           prompt: string
+          story_ip_id: string | null
+          story_license_terms_ids: string[] | null
+          story_tx_hash: string | null
           style: string | null
+          supabase_image_url: string | null
           updated_at: string
           wallet_address: string
         }
@@ -30,10 +36,16 @@ export type Database = {
           created_at?: string
           id?: string
           image_url?: string | null
+          ip_metadata_uri?: string | null
           ipfs_hash?: string | null
+          nft_metadata_uri?: string | null
           pinata_url?: string | null
           prompt: string
+          story_ip_id?: string | null
+          story_license_terms_ids?: string[] | null
+          story_tx_hash?: string | null
           style?: string | null
+          supabase_image_url?: string | null
           updated_at?: string
           wallet_address: string
         }
@@ -41,10 +53,16 @@ export type Database = {
           created_at?: string
           id?: string
           image_url?: string | null
+          ip_metadata_uri?: string | null
           ipfs_hash?: string | null
+          nft_metadata_uri?: string | null
           pinata_url?: string | null
           prompt?: string
+          story_ip_id?: string | null
+          story_license_terms_ids?: string[] | null
+          story_tx_hash?: string | null
           style?: string | null
+          supabase_image_url?: string | null
           updated_at?: string
           wallet_address?: string
         }

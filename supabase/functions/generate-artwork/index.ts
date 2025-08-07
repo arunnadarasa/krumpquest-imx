@@ -164,9 +164,41 @@ serve(async (req) => {
       throw new Error(`Failed to encode image data: ${encodingError.message}`)
     }
 
+    // Store the image in Supabase storage
+    const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2')
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    )
+
+    let supabaseImageUrl = null
+    try {
+      // Convert base64 to blob for storage
+      const imageBlob = new Blob([uint8Array], { type: contentType })
+
+      // Upload to Supabase storage
+      const fileName = `artwork_${Date.now()}_${Math.random().toString(36).substring(7)}.jpg`
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('kollectibles')
+        .upload(fileName, imageBlob, {
+          contentType: contentType,
+          upsert: false
+        })
+
+      if (!uploadError && uploadData) {
+        supabaseImageUrl = `${Deno.env.get('SUPABASE_URL')}/storage/v1/object/public/kollectibles/${fileName}`
+        console.log('Image uploaded to Supabase storage:', supabaseImageUrl)
+      } else {
+        console.error('Error uploading to Supabase storage:', uploadError)
+      }
+    } catch (storageError) {
+      console.error('Storage error:', storageError)
+    }
+
     return new Response(
       JSON.stringify({ 
         imageUrl,
+        supabaseImageUrl,
         prompt: enhancedPrompt,
         style,
         aspectRatio: stabilityAspectRatio

@@ -7,6 +7,12 @@ export interface Kollectible {
   image_url?: string;
   ipfs_hash?: string;
   pinata_url?: string;
+  supabase_image_url?: string;
+  story_ip_id?: string;
+  story_tx_hash?: string;
+  story_license_terms_ids?: string[];
+  nft_metadata_uri?: string;
+  ip_metadata_uri?: string;
   style: string;
   created_at: string;
   updated_at: string;

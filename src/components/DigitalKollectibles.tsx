@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
+import { ExternalLink, Download, Loader2 } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '@/hooks/useAppSelector';
 import { setGamePhase } from '@/store/slices/gameSlice';
 import { 
@@ -200,9 +201,9 @@ export default function DigitalKollectibles() {
     }
   };
 
-  const uploadToIPFS = async () => {
+  const mintOnStory = async () => {
     if (!generatedImageUrl || !address) {
-      toast.error('No artwork to upload');
+      toast.error('No artwork to mint');
       return;
     }
 
@@ -210,7 +211,8 @@ export default function DigitalKollectibles() {
     dispatch(clearError());
 
     try {
-      const { data, error } = await supabase.functions.invoke('upload-to-ipfs', {
+      // First, store the image in Supabase and create a kollectible record
+      const { data: uploadData, error: uploadError } = await supabase.functions.invoke('upload-to-ipfs', {
         body: {
           imageUrl: generatedImageUrl,
           prompt: prompt.trim(),
@@ -223,20 +225,46 @@ export default function DigitalKollectibles() {
         }
       });
 
-      if (error) throw error;
+      if (uploadError) throw uploadError;
 
-      if (data?.kollectible) {
-        dispatch(addKollectible(data.kollectible));
-        dispatch(clearGeneratedImage());
-        setPrompt('');
-        toast.success('Artwork uploaded to IPFS and saved to your collection!');
-      } else {
-        throw new Error('Failed to save kollectible');
+      if (!uploadData?.kollectible) {
+        throw new Error('Failed to create kollectible record');
       }
+
+      // Then mint on Story Protocol
+      const { data: mintData, error: mintError } = await supabase.functions.invoke('mint-on-story', {
+        body: {
+          kollectibleId: uploadData.kollectible.id,
+          walletAddress: address
+        }
+      });
+
+      if (mintError) throw mintError;
+
+      // Update kollectible with Story Protocol data
+      const updatedKollectible = {
+        ...uploadData.kollectible,
+        story_ip_id: mintData.ipId,
+        story_tx_hash: mintData.txHash,
+        story_license_terms_ids: mintData.licenseTermsIds,
+        ip_metadata_uri: mintData.ipMetadataURI,
+        nft_metadata_uri: mintData.nftMetadataURI
+      };
+
+      dispatch(addKollectible(updatedKollectible));
+      dispatch(clearGeneratedImage());
+      setPrompt('');
+      
+      toast.success(`NFT minted on Story Protocol! IP ID: ${mintData.ipId.slice(0, 8)}...`);
+      
+      // Open Story Protocol explorer
+      window.open(mintData.explorerUrl, '_blank');
     } catch (error: any) {
-      console.error('Error uploading to IPFS:', error);
-      dispatch(setError(error.message || 'Failed to upload to IPFS'));
-      toast.error('Failed to upload to IPFS');
+      console.error('Error minting on Story:', error);
+      dispatch(setError(error.message || 'Failed to mint on Story Protocol'));
+      toast.error('Failed to mint on Story Protocol');
+    } finally {
+      dispatch(setUploading(false));
     }
   };
 
@@ -314,7 +342,7 @@ export default function DigitalKollectibles() {
         <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className="text-3xl font-bold text-white">🎨 Digital Kollectibles</h1>
-            <p className="text-gray-300 mt-1">Create AI-powered artwork and mint on IPFS</p>
+            <p className="text-gray-300 mt-1">Create AI-powered artwork and mint on Story Protocol</p>
           </div>
           <div className="flex items-center gap-4">
             <Button
@@ -337,7 +365,7 @@ export default function DigitalKollectibles() {
             <CardHeader>
               <CardTitle className="text-white">🎨 Create New Artwork</CardTitle>
               <CardDescription className="text-gray-300">
-                Generate unique digital art using AI and upload to IPFS
+                Generate unique digital art using AI and mint as NFTs on Story Protocol
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -472,11 +500,18 @@ export default function DigitalKollectibles() {
                       📥 Download
                     </Button>
                     <Button
-                      onClick={uploadToIPFS}
+                      onClick={mintOnStory}
                       disabled={isUploading}
-                      className="flex-1 bg-green-600 hover:bg-green-700"
+                      className="flex-1 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
                     >
-                      {isUploading ? '📤 Uploading...' : '📤 Upload to IPFS'}
+                      {isUploading ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Minting...
+                        </>
+                      ) : (
+                        '🚀 Mint on Story'
+                      )}
                     </Button>
                   </div>
                 )}
@@ -506,7 +541,7 @@ export default function DigitalKollectibles() {
             <CardHeader>
               <CardTitle className="text-white">🖼️ Your Kollectibles</CardTitle>
               <CardDescription className="text-gray-300">
-                Your collection of digital art stored on IPFS
+                Your collection of digital art stored on IPFS and minted on Story Protocol
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -535,6 +570,11 @@ export default function DigitalKollectibles() {
                             <Badge variant="outline" className="text-xs">
                               {kollectible.style}
                             </Badge>
+                            {kollectible.story_ip_id && (
+                              <Badge className="text-xs bg-blue-600/20 border-blue-500/50 text-blue-300">
+                                Minted on Story
+                              </Badge>
+                            )}
                             <span className="text-xs text-gray-400">
                               {new Date(kollectible.created_at).toLocaleDateString()}
                             </span>
@@ -556,9 +596,21 @@ export default function DigitalKollectibles() {
                                   size="sm"
                                   className="h-6 px-2 text-xs"
                                 >
-                                  📥 Download
+                                  <Download className="h-3 w-3 mr-1" />
+                                  Download
                                 </Button>
                               </>
+                            )}
+                            {kollectible.story_ip_id && (
+                              <Button
+                                onClick={() => window.open(`https://aeneid.storyscan.io/ipa/${kollectible.story_ip_id}`, '_blank')}
+                                variant="outline"
+                                size="sm"
+                                className="h-6 px-2 text-xs bg-blue-600/20 border-blue-500/50 text-blue-300 hover:bg-blue-600/30"
+                              >
+                                <ExternalLink className="h-3 w-3 mr-1" />
+                                Story
+                              </Button>
                             )}
                           </div>
                         </div>

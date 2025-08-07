@@ -137,6 +137,7 @@ serve(async (req) => {
         image_url: imageUrl,
         ipfs_hash: ipfsHash,
         pinata_url: pinataUrl,
+        supabase_image_url: imageUrl.startsWith('data:') ? null : imageUrl, // Store original URL if not base64
         style
       })
       .select()
