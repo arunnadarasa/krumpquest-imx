@@ -21,6 +21,7 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { useAccount, useWalletClient, useSwitchChain } from 'wagmi';
 import WalletConnect from './WalletConnect';
+import WalletStatus from './kollectibles/WalletStatus';
 import { useIsMobile } from '@/hooks/use-mobile';
 import ArtworkGenerationPanel from './kollectibles/ArtworkGenerationPanel';
 import ArtworkPreview from './kollectibles/ArtworkPreview';
@@ -378,13 +379,15 @@ export default function DigitalKollectibles() {
               Create, mint, and collect unique Krump-inspired digital artwork
             </p>
           </div>
-          <Button 
-            onClick={() => dispatch(setGamePhase('world_map'))} 
-            variant="outline"
-            className="self-start lg:self-center"
-          >
-            ← Back to Map
-          </Button>
+          <div className="flex items-center gap-3">
+            <WalletStatus />
+            <Button 
+              onClick={() => dispatch(setGamePhase('world_map'))} 
+              variant="outline"
+            >
+              ← Back to Map
+            </Button>
+          </div>
         </div>
 
         {/* Error Display */}
