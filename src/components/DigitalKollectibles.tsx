@@ -452,7 +452,26 @@ export default function DigitalKollectibles() {
               </CardDescription>
             </CardHeader>
             <CardContent className="flex justify-center py-8">
-              <WalletConnect />
+              <div className="w-full max-w-md space-y-4">
+                <div className="flex justify-center">
+                  <WalletConnect />
+                </div>
+                <div className="rounded-md border bg-muted/30 p-4">
+                  <p className="text-sm text-muted-foreground mb-3">Need Aeneid testnet tokens?</p>
+                  <div className="flex flex-wrap gap-2">
+                    <Button asChild variant="secondary" size="sm">
+                      <a href="https://cloud.google.com/application/web3/faucet/story/aeneid" target="_blank" rel="noopener noreferrer">
+                        Google Cloud Faucet
+                      </a>
+                    </Button>
+                    <Button asChild variant="secondary" size="sm">
+                      <a href="https://aeneid.faucet.story.foundation/" target="_blank" rel="noopener noreferrer">
+                        Story Foundation Faucet
+                      </a>
+                    </Button>
+                  </div>
+                </div>
+              </div>
             </CardContent>
           </Card>
         </div>
@@ -483,6 +502,19 @@ export default function DigitalKollectibles() {
             </Button>
           </div>
         </div>
+
+        {/* Aeneid Faucets */}
+        <Card className="mb-6">
+          <CardContent className="p-4 flex flex-wrap items-center gap-3">
+            <p className="text-sm text-muted-foreground mr-2">Need Aeneid testnet tokens?</p>
+            <Button asChild variant="secondary" size="sm">
+              <a href="https://cloud.google.com/application/web3/faucet/story/aeneid" target="_blank" rel="noopener noreferrer">Google Cloud Faucet</a>
+            </Button>
+            <Button asChild variant="secondary" size="sm">
+              <a href="https://aeneid.faucet.story.foundation/" target="_blank" rel="noopener noreferrer">Story Foundation Faucet</a>
+            </Button>
+          </CardContent>
+        </Card>
 
         {/* Error Display */}
         {error && (
