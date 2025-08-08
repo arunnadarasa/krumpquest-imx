@@ -347,7 +347,12 @@ export default function DigitalKollectibles() {
       dispatch(clearGeneratedImage());
       setPrompt('');
 
-      toast.success('NFT successfully minted and registered on Story!');
+      toast.success('NFT successfully minted and registered on Story!', {
+        action: {
+          label: 'View tx',
+          onClick: () => window.open(`https://aeneid.storyscan.io/tx/${response.txHash}`, '_blank'),
+        },
+      });
     } catch (error: any) {
       console.error('Error minting on Story:', error);
       dispatch(setError(error.message || 'Failed to mint on Story Protocol'));

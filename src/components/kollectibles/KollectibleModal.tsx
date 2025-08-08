@@ -12,9 +12,11 @@ import {
   Calendar, 
   Palette, 
   Hash,
+  Copy,
   X
 } from 'lucide-react';
 import { Kollectible } from '@/store/slices/kollectiblesSlice';
+import { toast } from 'sonner';
 
 interface KollectibleModalProps {
   kollectible: Kollectible;
@@ -123,14 +125,29 @@ export default function KollectibleModal({
                           </p>
                         </div>
                         
-                        {kollectible.story_tx_hash && (
-                          <div>
-                            <span className="font-medium">Transaction:</span>
-                            <p className="font-mono text-xs text-muted-foreground break-all">
-                              {kollectible.story_tx_hash}
-                            </p>
-                          </div>
-                        )}
+                          {kollectible.story_tx_hash && (
+                            <div>
+                              <span className="font-medium">Transaction:</span>
+                              <div className="flex items-center gap-2 mt-1">
+                                <p className="font-mono text-xs text-muted-foreground break-all">
+                                  {kollectible.story_tx_hash}
+                                </p>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => {
+                                    if (kollectible.story_tx_hash) {
+                                      navigator.clipboard.writeText(kollectible.story_tx_hash);
+                                      toast.success('Transaction hash copied');
+                                    }
+                                  }}
+                                  aria-label="Copy transaction hash"
+                                >
+                                  <Copy className="w-4 h-4" />
+                                </Button>
+                              </div>
+                            </div>
+                          )}
                         
                         {kollectible.story_license_terms_ids && (
                           <div>
@@ -146,18 +163,35 @@ export default function KollectibleModal({
                         )}
                       </div>
                       
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="w-full mt-3"
-                        onClick={() => {
-                          const explorerUrl = `https://aeneid.explorer.story.foundation/ipa/${kollectible.story_ip_id}`;
-                          window.open(explorerUrl, '_blank');
-                        }}
-                      >
-                        <ExternalLink className="w-4 h-4 mr-2" />
-                        View on Story Explorer
-                      </Button>
+                      <div className="grid gap-2 mt-3">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="w-full"
+                          onClick={() => {
+                            const explorerUrl = `https://aeneid.explorer.story.foundation/ipa/${kollectible.story_ip_id}`;
+                            window.open(explorerUrl, '_blank');
+                          }}
+                        >
+                          <ExternalLink className="w-4 h-4 mr-2" />
+                          View on Story Explorer
+                        </Button>
+
+                        {kollectible.story_tx_hash && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="w-full"
+                            onClick={() => {
+                              const scanUrl = `https://aeneid.storyscan.io/tx/${kollectible.story_tx_hash}`;
+                              window.open(scanUrl, '_blank');
+                            }}
+                          >
+                            <ExternalLink className="w-4 h-4 mr-2" />
+                            View on Story Scan
+                          </Button>
+                        )}
+                      </div>
                     </CardContent>
                   </Card>
                 </>
