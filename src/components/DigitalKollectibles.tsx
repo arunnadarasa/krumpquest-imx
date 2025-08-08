@@ -569,7 +569,7 @@ export default function DigitalKollectibles() {
             )}
 
             <KollectibleGallery
-              kollectibles={visibleKollectibles}
+              kollectibles={kollectibles}
               showHidden={showHidden}
               onToggleShowHidden={() => dispatch(toggleShowHidden())}
               onHideKollectible={handleHideKollectible}
@@ -616,7 +616,7 @@ export default function DigitalKollectibles() {
             {/* Right Column: Gallery */}
             <div className="xl:col-span-4">
               <KollectibleGallery
-                kollectibles={visibleKollectibles}
+                kollectibles={kollectibles}
                 showHidden={showHidden}
                 onToggleShowHidden={() => dispatch(toggleShowHidden())}
                 onHideKollectible={handleHideKollectible}

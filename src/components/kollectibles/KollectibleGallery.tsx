@@ -356,24 +356,31 @@ export default function KollectibleGallery({
       {/* Gallery */}
       {filteredKollectibles.length === 0 ? (
         <Card className="glass">
-          <CardContent className="py-12 text-center">
-            <p className="text-muted-foreground mb-4">
+          <CardContent className="py-12 text-center space-y-4">
+            <p className="text-muted-foreground">
               {kollectibles.length === 0 
                 ? "No kollectibles yet. Create your first artwork!"
                 : "No kollectibles match your current filters."
               }
             </p>
-            {kollectibles.length > 0 && (
-              <Button 
-                variant="outline" 
-                onClick={() => {
-                  setSearchQuery('');
-                  setFilterStyle('all');
-                }}
-              >
-                Clear Filters
-              </Button>
-            )}
+            <div className="flex flex-wrap items-center justify-center gap-2">
+              {kollectibles.length > 0 && (
+                <Button 
+                  variant="outline" 
+                  onClick={() => {
+                    setSearchQuery('');
+                    setFilterStyle('all');
+                  }}
+                >
+                  Clear Filters
+                </Button>
+              )}
+              {kollectibles.length > 0 && hiddenCount > 0 && !showHidden && (
+                <Button variant="secondary" onClick={onToggleShowHidden}>
+                  Show Hidden ({hiddenCount})
+                </Button>
+              )}
+            </div>
           </CardContent>
         </Card>
       ) : (
