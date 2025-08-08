@@ -20,6 +20,8 @@ import {
 } from '@/store/slices/kollectiblesSlice';
 import { supabase } from '@/integrations/supabase/client';
 import { useAccount, useWalletClient, useSwitchChain } from 'wagmi';
+import { StoryClient } from '@story-protocol/core-sdk';
+import { custom } from 'viem';
 import WalletConnect from './WalletConnect';
 import WalletStatus from './kollectibles/WalletStatus';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -215,50 +217,137 @@ export default function DigitalKollectibles() {
 
     try {
       toast.info('Uploading artwork to IPFS...');
-      
+
       const imageUrlToUpload = generatedSupabaseUrl || generatedImageUrl;
-      
+
       const { data: uploadData, error: uploadError } = await supabase.functions.invoke('upload-to-ipfs', {
         body: {
           imageUrl: imageUrlToUpload,
           prompt: finalPrompt,
           style: selectedStyle,
-          wallet_address: address.toLowerCase()
-        }
+          wallet_address: address.toLowerCase(),
+        },
       });
 
       if (uploadError) throw uploadError;
       if (!uploadData?.kollectible) throw new Error('Failed to create kollectible record');
 
-      toast.info('Preparing to mint on Story Protocol...');
-      
-      const simulatedIpId = `0x${Math.random().toString(16).slice(2, 42)}`;
-      const simulatedTxHash = `0x${Math.random().toString(16).slice(2, 66)}`;
+      const kollectible = uploadData.kollectible;
+      const imageIpfsHash: string = uploadData.ipfsHash || kollectible.ipfs_hash;
+      const imageIpfsUri = `https://ipfs.io/ipfs/${imageIpfsHash}`;
 
+      // Compute image hash (sha256 of image bytes)
+      const imageResp = await fetch(imageIpfsUri);
+      const imageBuf = await imageResp.arrayBuffer();
+      const imageDigest = await crypto.subtle.digest('SHA-256', imageBuf);
+      const imageHashHex = Array.from(new Uint8Array(imageDigest))
+        .map((b) => b.toString(16).padStart(2, '0'))
+        .join('');
+
+      // Build IP metadata
+      const createdAt = Math.floor(Date.now() / 1000).toString();
+      const ipMetadata = {
+        title: `Krump Kollectible` ,
+        description: finalPrompt,
+        image: imageIpfsUri,
+        imageHash: `0x${imageHashHex}`,
+        mediaUrl: imageIpfsUri,
+        mediaHash: `0x${imageHashHex}`,
+        mediaType: 'image/jpeg',
+        createdAt,
+        creators: [
+          {
+            name: address,
+            address,
+            contributionPercent: 100,
+          },
+        ],
+      };
+
+      // Build NFT metadata
+      const nftMetadata = {
+        name: `Krump Kollectible` ,
+        description: `${finalPrompt} — This NFT represents ownership of the IP Asset.`,
+        image: imageIpfsUri,
+        attributes: [
+          { key: 'Style', value: selectedStyle },
+          { key: 'Aspect Ratio', value: aspectRatio },
+        ],
+      };
+
+      // Upload metadata JSON to IPFS
+      const [{ data: ipMetaRes, error: ipMetaErr }, { data: nftMetaRes, error: nftMetaErr }] = await Promise.all([
+        supabase.functions.invoke('upload-json-to-ipfs', { body: { json: ipMetadata } }),
+        supabase.functions.invoke('upload-json-to-ipfs', { body: { json: nftMetadata } }),
+      ]);
+
+      if (ipMetaErr) throw ipMetaErr;
+      if (nftMetaErr) throw nftMetaErr;
+
+      const ipIpfsHash: string = ipMetaRes?.ipfsHash;
+      const nftIpfsHash: string = nftMetaRes?.ipfsHash;
+
+      if (!ipIpfsHash || !nftIpfsHash) throw new Error('Failed to upload metadata to IPFS');
+
+      // Compute metadata hashes (sha256 of JSON string)
+      const encoder = new TextEncoder();
+      const ipMetaStr = JSON.stringify(ipMetadata);
+      const nftMetaStr = JSON.stringify(nftMetadata);
+      const [ipMetaDigest, nftMetaDigest] = await Promise.all([
+        crypto.subtle.digest('SHA-256', encoder.encode(ipMetaStr)),
+        crypto.subtle.digest('SHA-256', encoder.encode(nftMetaStr)),
+      ]);
+      const ipHashHex = Array.from(new Uint8Array(ipMetaDigest))
+        .map((b) => b.toString(16).padStart(2, '0'))
+        .join('');
+      const nftHashHex = Array.from(new Uint8Array(nftMetaDigest))
+        .map((b) => b.toString(16).padStart(2, '0'))
+        .join('');
+
+      toast.info('Requesting wallet to mint and register IP...');
+
+      // Create Story client with connected wallet
+      const client = StoryClient.newClient({
+        account: walletClient.account,
+        transport: custom((window as any).ethereum),
+        chainId: 'aeneid',
+      });
+
+      const SPGNFTContractAddress = '0xc32A8a0FF3beDDDa58393d022aF433e78739FAbc';
+
+      const response = await client.ipAsset.mintAndRegisterIp({
+        spgNftContract: SPGNFTContractAddress,
+        ipMetadata: {
+          ipMetadataURI: `https://ipfs.io/ipfs/${ipIpfsHash}`,
+          ipMetadataHash: `0x${ipHashHex}`,
+          nftMetadataURI: `https://ipfs.io/ipfs/${nftIpfsHash}`,
+          nftMetadataHash: `0x${nftHashHex}`,
+        },
+      });
+
+      // Update kollectible with real tx
       const { error: updateError } = await supabase
         .from('kollectibles')
         .update({
-          story_ip_id: simulatedIpId,
-          story_tx_hash: simulatedTxHash,
-          story_license_terms_ids: ['commercial_remix'],
-          updated_at: new Date().toISOString()
+          story_ip_id: response.ipId,
+          story_tx_hash: response.txHash,
+          updated_at: new Date().toISOString(),
         })
-        .eq('id', uploadData.kollectible.id);
+        .eq('id', kollectible.id);
 
       if (updateError) console.error('Error updating kollectible:', updateError);
 
       const updatedKollectible = {
-        ...uploadData.kollectible,
-        story_ip_id: simulatedIpId,
-        story_tx_hash: simulatedTxHash,
-        story_license_terms_ids: ['commercial_remix']
+        ...kollectible,
+        story_ip_id: response.ipId,
+        story_tx_hash: response.txHash,
       };
 
       dispatch(addKollectible(updatedKollectible));
       dispatch(clearGeneratedImage());
       setPrompt('');
-      
-      toast.success('NFT successfully minted on Story Protocol!');
+
+      toast.success('NFT successfully minted and registered on Story!');
     } catch (error: any) {
       console.error('Error minting on Story:', error);
       dispatch(setError(error.message || 'Failed to mint on Story Protocol'));

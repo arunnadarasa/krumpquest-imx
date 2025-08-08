@@ -11,3 +11,6 @@ verify_jwt = false
 
 [functions.mint-on-story]
 verify_jwt = false
+
+[functions.upload-json-to-ipfs]
+verify_jwt = false
