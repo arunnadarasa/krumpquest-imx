@@ -20,8 +20,6 @@ import {
 } from '@/store/slices/kollectiblesSlice';
 import { supabase } from '@/integrations/supabase/client';
 import { useAccount, useWalletClient, useSwitchChain } from 'wagmi';
-import { StoryClient } from '@story-protocol/core-sdk';
-import { custom } from 'viem';
 import WalletConnect from './WalletConnect';
 import WalletStatus from './kollectibles/WalletStatus';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -194,18 +192,18 @@ export default function DigitalKollectibles() {
     }
   };
 
-  const mintOnStory = async () => {
+  const mintOnImmutable = async () => {
     if ((!generatedSupabaseUrl && !generatedImageUrl) || !address || !walletClient) {
       toast.error('No artwork to mint or wallet not properly connected');
       return;
     }
 
-    if (chainId !== 1315) {
+    if (chainId !== 13473) {
       try {
-        toast.info('Switching to Story Aeneid Testnet...');
-        await switchChain({ chainId: 1315 });
+        toast.info('Switching to Immutable zkEVM Testnet...');
+        await switchChain({ chainId: 13473 });
       } catch (error) {
-        toast.error('Please switch to Story Aeneid Testnet in your wallet');
+        toast.error('Please switch to Immutable zkEVM Testnet in your wallet');
         return;
       }
     }
@@ -297,66 +295,41 @@ export default function DigitalKollectibles() {
         crypto.subtle.digest('SHA-256', encoder.encode(ipMetaStr)),
         crypto.subtle.digest('SHA-256', encoder.encode(nftMetaStr)),
       ]);
-      const ipHashHex = Array.from(new Uint8Array(ipMetaDigest))
-        .map((b) => b.toString(16).padStart(2, '0'))
-        .join('');
-      const nftHashHex = Array.from(new Uint8Array(nftMetaDigest))
-        .map((b) => b.toString(16).padStart(2, '0'))
-        .join('');
+      toast.info('Minting NFT on Immutable zkEVM...');
 
-      toast.info('Requesting wallet to mint and register IP...');
-
-      // Create Story client with connected wallet
-      const client = StoryClient.newClient({
-        account: walletClient.account,
-        transport: custom((window as any).ethereum),
-        chainId: 'aeneid',
-      });
-
-      const SPGNFTContractAddress = '0xc32A8a0FF3beDDDa58393d022aF433e78739FAbc';
-
-      const response = await client.ipAsset.mintAndRegisterIp({
-        spgNftContract: SPGNFTContractAddress,
-        ipMetadata: {
-          ipMetadataURI: `https://ipfs.io/ipfs/${ipIpfsHash}`,
-          ipMetadataHash: `0x${ipHashHex}`,
-          nftMetadataURI: `https://ipfs.io/ipfs/${nftIpfsHash}`,
-          nftMetadataHash: `0x${nftHashHex}`,
+      // Use the new mint-on-immutable edge function
+      const { data: mintResponse, error: mintError } = await supabase.functions.invoke('mint-on-immutable', {
+        body: {
+          kollectibleId: kollectible.id,
+          walletAddress: address,
         },
       });
 
-      // Update kollectible with real tx
-      const { error: updateError } = await supabase
-        .from('kollectibles')
-        .update({
-          story_ip_id: response.ipId,
-          story_tx_hash: response.txHash,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', kollectible.id);
-
-      if (updateError) console.error('Error updating kollectible:', updateError);
+      if (mintError) throw mintError;
+      if (!mintResponse?.success) throw new Error(mintResponse?.error || 'Minting failed');
 
       const updatedKollectible = {
         ...kollectible,
-        story_ip_id: response.ipId,
-        story_tx_hash: response.txHash,
+        immutable_nft_id: mintResponse.nftId,
+        immutable_tx_hash: mintResponse.txHash,
+        immutable_collection_id: mintResponse.collectionId,
+        nft_metadata_uri: mintResponse.metadataUri,
       };
 
       dispatch(addKollectible(updatedKollectible));
       dispatch(clearGeneratedImage());
       setPrompt('');
 
-      toast.success('NFT successfully minted and registered on Story!', {
+      toast.success('NFT successfully minted on Immutable zkEVM!', {
         action: {
           label: 'View tx',
-          onClick: () => window.open(`https://aeneid.storyscan.io/tx/${response.txHash}`, '_blank'),
+          onClick: () => window.open(mintResponse.explorerUrl, '_blank'),
         },
       });
     } catch (error: any) {
-      console.error('Error minting on Story:', error);
-      dispatch(setError(error.message || 'Failed to mint on Story Protocol'));
-      toast.error('Failed to mint on Story Protocol. Please try again.');
+      console.error('Error minting on Immutable:', error);
+      dispatch(setError(error.message || 'Failed to mint on Immutable zkEVM'));
+      toast.error('Failed to mint on Immutable zkEVM. Please try again.');
     } finally {
       dispatch(setUploading(false));
     }
@@ -457,16 +430,11 @@ export default function DigitalKollectibles() {
                   <WalletConnect />
                 </div>
                 <div className="rounded-md border bg-muted/30 p-4">
-                  <p className="text-sm text-muted-foreground mb-3">Need Aeneid testnet tokens?</p>
+                  <p className="text-sm text-muted-foreground mb-3">Need Immutable zkEVM testnet tokens?</p>
                   <div className="flex flex-wrap gap-2">
                     <Button asChild variant="secondary" size="sm">
-                      <a href="https://cloud.google.com/application/web3/faucet/story/aeneid" target="_blank" rel="noopener noreferrer">
-                        Google Cloud Faucet
-                      </a>
-                    </Button>
-                    <Button asChild variant="secondary" size="sm">
-                      <a href="https://aeneid.faucet.story.foundation/" target="_blank" rel="noopener noreferrer">
-                        Story Foundation Faucet
+                      <a href="https://docs.immutable.com/build/faucet" target="_blank" rel="noopener noreferrer">
+                        Immutable Faucet
                       </a>
                     </Button>
                   </div>
@@ -503,15 +471,12 @@ export default function DigitalKollectibles() {
           </div>
         </div>
 
-        {/* Aeneid Faucets */}
+        {/* Immutable Testnet Faucets */}
         <Card className="mb-6">
           <CardContent className="p-4 flex flex-wrap items-center gap-3">
-            <p className="text-sm text-muted-foreground mr-2">Need Aeneid testnet tokens?</p>
+            <p className="text-sm text-muted-foreground mr-2">Need Immutable zkEVM testnet tokens?</p>
             <Button asChild variant="secondary" size="sm">
-              <a href="https://cloud.google.com/application/web3/faucet/story/aeneid" target="_blank" rel="noopener noreferrer">Google Cloud Faucet</a>
-            </Button>
-            <Button asChild variant="secondary" size="sm">
-              <a href="https://aeneid.faucet.story.foundation/" target="_blank" rel="noopener noreferrer">Story Foundation Faucet</a>
+              <a href="https://docs.immutable.com/build/faucet" target="_blank" rel="noopener noreferrer">Immutable Faucet</a>
             </Button>
           </CardContent>
         </Card>
@@ -564,7 +529,7 @@ export default function DigitalKollectibles() {
                 selectedStyle={selectedStyle}
                 aspectRatio={aspectRatio}
                 onDownload={downloadGeneratedImage}
-                onMint={mintOnStory}
+                onMint={mintOnImmutable}
               />
             )}
 
@@ -609,7 +574,7 @@ export default function DigitalKollectibles() {
                 selectedStyle={selectedStyle}
                 aspectRatio={aspectRatio}
                 onDownload={downloadGeneratedImage}
-                onMint={mintOnStory}
+                onMint={mintOnImmutable}
               />
             </div>
 
