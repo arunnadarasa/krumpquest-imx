@@ -64,7 +64,7 @@ export default function DigitalKollectibles() {
   const loadUserKollectibles = async (walletAddress: string) => {
     try {
       const { data, error } = await supabase
-        .from('kollectibles')
+        .from('immutable_kollectibles')
         .select('*')
         .eq('wallet_address', walletAddress.toLowerCase())
         .order('created_at', { ascending: false });
@@ -370,7 +370,7 @@ export default function DigitalKollectibles() {
   const handleHideKollectible = async (kollectibleId: string) => {
     try {
       const { error } = await supabase
-        .from('kollectibles')
+        .from('immutable_kollectibles')
         .update({ is_hidden: true })
         .eq('id', kollectibleId);
 
@@ -386,7 +386,7 @@ export default function DigitalKollectibles() {
   const handleShowKollectible = async (kollectibleId: string) => {
     try {
       const { error } = await supabase
-        .from('kollectibles')
+        .from('immutable_kollectibles')
         .update({ is_hidden: false })
         .eq('id', kollectibleId);
 

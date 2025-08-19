@@ -149,7 +149,7 @@ serve(async (req) => {
 
     console.log('Saving kollectible to database...')
     const { data: kollectible, error: dbError } = await supabase
-      .from('kollectibles')
+      .from('immutable_kollectibles')
       .insert({
         wallet_address: wallet_address.toLowerCase(),
         prompt,

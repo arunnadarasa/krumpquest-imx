@@ -14,6 +14,60 @@ export type Database = {
   }
   public: {
     Tables: {
+      immutable_kollectibles: {
+        Row: {
+          created_at: string
+          id: string
+          image_url: string | null
+          immutable_collection_id: string | null
+          immutable_nft_id: string | null
+          immutable_tx_hash: string | null
+          ipfs_hash: string | null
+          is_hidden: boolean
+          nft_metadata_uri: string | null
+          pinata_url: string | null
+          prompt: string
+          style: string | null
+          supabase_image_url: string | null
+          updated_at: string
+          wallet_address: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          immutable_collection_id?: string | null
+          immutable_nft_id?: string | null
+          immutable_tx_hash?: string | null
+          ipfs_hash?: string | null
+          is_hidden?: boolean
+          nft_metadata_uri?: string | null
+          pinata_url?: string | null
+          prompt: string
+          style?: string | null
+          supabase_image_url?: string | null
+          updated_at?: string
+          wallet_address: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          immutable_collection_id?: string | null
+          immutable_nft_id?: string | null
+          immutable_tx_hash?: string | null
+          ipfs_hash?: string | null
+          is_hidden?: boolean
+          nft_metadata_uri?: string | null
+          pinata_url?: string | null
+          prompt?: string
+          style?: string | null
+          supabase_image_url?: string | null
+          updated_at?: string
+          wallet_address?: string
+        }
+        Relationships: []
+      }
       kollectibles: {
         Row: {
           created_at: string

@@ -33,7 +33,7 @@ serve(async (req) => {
 
     // Get the kollectible data
     const { data: kollectible, error: fetchError } = await supabase
-      .from('kollectibles')
+      .from('immutable_kollectibles')
       .select('*')
       .eq('id', kollectibleId)
       .eq('wallet_address', walletAddress)
@@ -97,7 +97,7 @@ serve(async (req) => {
 
     // Update kollectible with Immutable data
     const { error: updateError } = await supabase
-      .from('kollectibles')
+      .from('immutable_kollectibles')
       .update({
         immutable_nft_id: mockNftId,
         immutable_tx_hash: mockTxHash,
