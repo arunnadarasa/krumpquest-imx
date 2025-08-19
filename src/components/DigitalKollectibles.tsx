@@ -431,9 +431,9 @@ export default function DigitalKollectibles() {
                 </div>
                 <div className="rounded-md border bg-muted/30 p-4">
                   <p className="text-sm text-muted-foreground mb-3">Need Immutable zkEVM testnet tokens?</p>
-                  <div className="flex flex-wrap gap-2">
+                 <div className="flex flex-wrap gap-2">
                     <Button asChild variant="secondary" size="sm">
-                      <a href="https://docs.immutable.com/build/faucet" target="_blank" rel="noopener noreferrer">
+                      <a href="https://hub.immutable.com/faucet" target="_blank" rel="noopener noreferrer">
                         Immutable Faucet
                       </a>
                     </Button>
@@ -476,7 +476,7 @@ export default function DigitalKollectibles() {
           <CardContent className="p-4 flex flex-wrap items-center gap-3">
             <p className="text-sm text-muted-foreground mr-2">Need Immutable zkEVM testnet tokens?</p>
             <Button asChild variant="secondary" size="sm">
-              <a href="https://docs.immutable.com/build/faucet" target="_blank" rel="noopener noreferrer">Immutable Faucet</a>
+              <a href="https://hub.immutable.com/faucet" target="_blank" rel="noopener noreferrer">Immutable Faucet</a>
             </Button>
           </CardContent>
         </Card>
