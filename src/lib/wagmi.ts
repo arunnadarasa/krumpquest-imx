@@ -1,24 +1,24 @@
 import { getDefaultConfig } from '@rainbow-me/rainbowkit';
 import { mainnet, polygon, optimism, arbitrum, base } from 'wagmi/chains';
 
-// Story Aeneid Testnet configuration as a simple object
-const storyAeneidTestnet = {
-  id: 1315,
-  name: 'Story Aeneid Testnet',
+// Immutable zkEVM Testnet configuration
+const immutableTestnet = {
+  id: 13473,
+  name: 'Immutable zkEVM Testnet',
   nativeCurrency: {
     decimals: 18,
-    name: 'IP',
-    symbol: 'IP',
+    name: 'IMX',
+    symbol: 'IMX',
   },
   rpcUrls: {
     default: {
-      http: ['https://aeneid.storyrpc.io'],
+      http: ['https://rpc.testnet.immutable.com'],
     },
   },
   blockExplorers: {
     default: {
-      name: 'Story Aeneid Explorer',
-      url: 'https://aeneid.storyscan.io',
+      name: 'Immutable zkEVM Explorer',
+      url: 'https://explorer.testnet.immutable.com',
     },
   },
   testnet: true,
@@ -27,6 +27,6 @@ const storyAeneidTestnet = {
 export const wagmiConfig = getDefaultConfig({
   appName: 'Krump Quest',
   projectId: '2f5a6cde-6d62-4faa-8ae2-c4ae70d30c78',
-  chains: [storyAeneidTestnet, mainnet, polygon, optimism, arbitrum, base],
+  chains: [immutableTestnet, mainnet, polygon, optimism, arbitrum, base],
   ssr: false,
 });

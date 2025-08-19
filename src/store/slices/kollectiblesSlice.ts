@@ -8,9 +8,9 @@ export interface Kollectible {
   ipfs_hash?: string;
   pinata_url?: string;
   supabase_image_url?: string;
-  story_ip_id?: string;
-  story_tx_hash?: string;
-  story_license_terms_ids?: string[];
+  immutable_nft_id?: string;
+  immutable_tx_hash?: string;
+  immutable_collection_id?: string;
   nft_metadata_uri?: string;
   ip_metadata_uri?: string;
   style: string;
