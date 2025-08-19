@@ -40,13 +40,13 @@ export default function ImmutablePassport({ onUserChange }: ImmutablePassportPro
         }
       };
 
-      const passport = new passport.Passport(passportConfig);
-      setPassportInstance(passport);
+      const passportClient = new passport.Passport(passportConfig);
+      setPassportInstance(passportClient);
       setIsInitialized(true);
 
       // Check if user is already logged in
       try {
-        const userInfo = await passport.getUserInfo();
+        const userInfo = await passportClient.getUserInfo();
         if (userInfo) {
           setUser(userInfo);
           onUserChange(userInfo);

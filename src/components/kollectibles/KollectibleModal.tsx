@@ -62,7 +62,7 @@ export default function KollectibleModal({
               <DialogTitle className="flex items-center justify-between">
                 <span>Kollectible Details</span>
                 <div className="flex gap-2">
-                  {kollectible.story_ip_id && (
+                  {kollectible.immutable_nft_id && (
                     <Badge variant="outline" className="text-accent">
                       ✨ Minted
                     </Badge>
@@ -107,37 +107,37 @@ export default function KollectibleModal({
                 </div>
               </div>
 
-              {/* Story Protocol Info */}
-              {kollectible.story_ip_id && (
+              {/* Immutable NFT Info */}
+              {kollectible.immutable_nft_id && (
                 <>
                   <Separator />
                   <Card className="bg-accent/10 border-accent/20">
                     <CardContent className="p-4 space-y-3">
                       <h4 className="font-semibold text-accent flex items-center gap-2">
-                        ✨ Story Protocol
+                        ✨ Immutable zkEVM
                       </h4>
                       
                       <div className="space-y-2 text-sm">
                         <div>
-                          <span className="font-medium">IP Asset ID:</span>
+                          <span className="font-medium">NFT ID:</span>
                           <p className="font-mono text-xs text-muted-foreground break-all">
-                            {kollectible.story_ip_id}
+                            {kollectible.immutable_nft_id}
                           </p>
                         </div>
                         
-                          {kollectible.story_tx_hash && (
+                          {kollectible.immutable_tx_hash && (
                             <div>
                               <span className="font-medium">Transaction:</span>
                               <div className="flex items-center gap-2 mt-1">
                                 <p className="font-mono text-xs text-muted-foreground break-all">
-                                  {kollectible.story_tx_hash}
+                                  {kollectible.immutable_tx_hash}
                                 </p>
                                 <Button
                                   variant="ghost"
                                   size="icon"
                                   onClick={() => {
-                                    if (kollectible.story_tx_hash) {
-                                      navigator.clipboard.writeText(kollectible.story_tx_hash);
+                                    if (kollectible.immutable_tx_hash) {
+                                      navigator.clipboard.writeText(kollectible.immutable_tx_hash);
                                       toast.success('Transaction hash copied');
                                     }
                                   }}
@@ -149,15 +149,13 @@ export default function KollectibleModal({
                             </div>
                           )}
                         
-                        {kollectible.story_license_terms_ids && (
+                        {kollectible.immutable_collection_id && (
                           <div>
-                            <span className="font-medium">License:</span>
+                            <span className="font-medium">Collection:</span>
                             <div className="flex gap-1 mt-1">
-                              {kollectible.story_license_terms_ids.map((license, index) => (
-                                <Badge key={index} variant="outline" className="text-xs">
-                                  {license}
-                                </Badge>
-                              ))}
+                              <Badge variant="outline" className="text-xs">
+                                {kollectible.immutable_collection_id}
+                              </Badge>
                             </div>
                           </div>
                         )}
@@ -169,28 +167,13 @@ export default function KollectibleModal({
                           size="sm"
                           className="w-full"
                           onClick={() => {
-                            const explorerUrl = `https://aeneid.explorer.story.foundation/ipa/${kollectible.story_ip_id}`;
+                            const explorerUrl = `https://explorer.testnet.immutable.com/tx/${kollectible.immutable_tx_hash}`;
                             window.open(explorerUrl, '_blank');
                           }}
                         >
                           <ExternalLink className="w-4 h-4 mr-2" />
-                          View on Story Explorer
+                          View on Immutable Explorer
                         </Button>
-
-                        {kollectible.story_tx_hash && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="w-full"
-                            onClick={() => {
-                              const scanUrl = `https://aeneid.storyscan.io/tx/${kollectible.story_tx_hash}`;
-                              window.open(scanUrl, '_blank');
-                            }}
-                          >
-                            <ExternalLink className="w-4 h-4 mr-2" />
-                            View on Story Scan
-                          </Button>
-                        )}
                       </div>
                     </CardContent>
                   </Card>

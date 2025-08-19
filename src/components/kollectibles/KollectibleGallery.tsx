@@ -154,7 +154,7 @@ export default function KollectibleGallery({
                 </div>
                 <div className="flex flex-wrap gap-2 mb-2">
                   <Badge variant="secondary">{kollectible.style}</Badge>
-                  {kollectible.story_ip_id && (
+                  {kollectible.immutable_nft_id && (
                     <Badge variant="outline" className="text-accent">
                       ✨ Minted
                     </Badge>
@@ -229,7 +229,7 @@ export default function KollectibleGallery({
               <Badge variant="secondary" className="text-xs">
                 {kollectible.style}
               </Badge>
-              {kollectible.story_ip_id && (
+              {kollectible.immutable_nft_id && (
                 <Badge variant="outline" className="text-accent text-xs">
                   ✨ Minted
                 </Badge>
