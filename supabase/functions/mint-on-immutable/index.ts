@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { config, blockchainData } from 'https://esm.sh/@imtbl/sdk@2.4.9'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -89,10 +90,10 @@ serve(async (req) => {
 
     // Get required environment variables for Immutable minting
     const contractAddress = Deno.env.get('IMMUTABLE_CONTRACT_ADDRESS');
-    const secretApiKey = Deno.env.get('IMMUTABLE_SECRET_API_KEY');
+    const apiKey = Deno.env.get('IMMUTABLE_API_KEY');
 
-    if (!contractAddress || !secretApiKey) {
-      console.error('Missing Immutable configuration:', { contractAddress: !!contractAddress, secretApiKey: !!secretApiKey });
+    if (!contractAddress || !apiKey) {
+      console.error('Missing Immutable configuration:', { contractAddress: !!contractAddress, apiKey: !!apiKey });
       return new Response(
         JSON.stringify({ error: 'Immutable configuration not found' }),
         { 
@@ -102,17 +103,26 @@ serve(async (req) => {
       );
     }
 
-    // Mint NFT on Immutable zkEVM using their REST API
+    // Initialize Immutable client using SDK
+    const client = new blockchainData.BlockchainData({
+      baseConfig: {
+        environment: config.Environment.SANDBOX,
+        apiKey: apiKey,
+      },
+    });
+
+    // Mint NFT on Immutable zkEVM using their SDK
     const referenceId = `krump-${kollectibleId.slice(-12)}`;
+    const chainName = 'imtbl-zkevm-testnet';
     
     try {
-      console.log('Starting Immutable mint with:', { contractAddress, referenceId, walletAddress });
+      console.log('Starting Immutable mint with SDK:', { contractAddress, referenceId, walletAddress });
       
-      // Use the correct Immutable API endpoint and structure
+      // Use Immutable SDK to create mint request
       const mintResponse = await fetch('https://api.sandbox.immutable.com/v1/chains/imtbl-zkevm-testnet/collections/mint/requests', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${secretApiKey}`,
+          'x-immutable-api-key': apiKey,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
