@@ -1,6 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { client } from '../_shared/lib.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -103,24 +102,26 @@ serve(async (req) => {
       );
     }
 
-    // Mint NFT on Immutable zkEVM using SDK
+    // Mint NFT on Immutable zkEVM using REST API (avoiding SDK compatibility issues)
     const referenceId = `krump-${kollectibleId.slice(-12)}`;
-    const chainName = 'imtbl-zkevm-testnet';
     
     try {
-      console.log('Starting Immutable mint with SDK:', { 
+      console.log('Starting Immutable mint with REST API:', { 
         contractAddress, 
         referenceId, 
         walletAddress,
-        chainName,
         apiKeyLength: apiKey?.length 
       });
       
-      // Use Immutable SDK to create mint request
-      const mintResult = await client.createMintRequest({
-        chainName,
-        contractAddress,
-        createMintRequestRequest: {
+      // Use Immutable REST API directly - this avoids SDK dependency issues
+      const mintResponse = await fetch('https://api.sandbox.immutable.com/v1/chains/imtbl-zkevm-testnet/collections/mint/requests', {
+        method: 'POST',
+        headers: {
+          'x-immutable-api-key': apiKey,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          contract_address: contractAddress,
           assets: [
             {
               owner_address: walletAddress,
@@ -128,8 +129,29 @@ serve(async (req) => {
               metadata: nftMetadata,
             }
           ]
-        },
+        }),
       });
+
+      if (!mintResponse.ok) {
+        const errorText = await mintResponse.text();
+        console.error('Immutable minting failed:', {
+          status: mintResponse.status,
+          statusText: mintResponse.statusText,
+          error: errorText
+        });
+        return new Response(
+          JSON.stringify({ 
+            error: `Minting failed: ${mintResponse.statusText}`,
+            details: errorText
+          }),
+          { 
+            status: mintResponse.status, 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          }
+        );
+      }
+
+      const mintResult = await mintResponse.json();
       console.log('Immutable mint response:', mintResult);
 
       // Check if we have the result data
