@@ -1,6 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { config, blockchainData } from 'https://esm.sh/@imtbl/sdk@2.4.9'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -103,22 +102,18 @@ serve(async (req) => {
       );
     }
 
-    // Initialize Immutable client using SDK
-    const client = new blockchainData.BlockchainData({
-      baseConfig: {
-        environment: config.Environment.SANDBOX,
-        apiKey: apiKey,
-      },
-    });
-
-    // Mint NFT on Immutable zkEVM using their SDK
+    // Mint NFT on Immutable zkEVM using REST API
     const referenceId = `krump-${kollectibleId.slice(-12)}`;
-    const chainName = 'imtbl-zkevm-testnet';
     
     try {
-      console.log('Starting Immutable mint with SDK:', { contractAddress, referenceId, walletAddress });
+      console.log('Starting Immutable mint with REST API:', { 
+        contractAddress, 
+        referenceId, 
+        walletAddress,
+        apiKeyLength: apiKey?.length 
+      });
       
-      // Use Immutable SDK to create mint request
+      // Use the correct Immutable API endpoint with proper headers
       const mintResponse = await fetch('https://api.sandbox.immutable.com/v1/chains/imtbl-zkevm-testnet/collections/mint/requests', {
         method: 'POST',
         headers: {
