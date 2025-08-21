@@ -2,3 +2,6 @@ project_id = "hzjfnebtbsdrkeuixebq"
 
 [functions.metadata-proxy]
 verify_jwt = false
+
+[functions.grant-minter-role]
+verify_jwt = false

@@ -157,7 +157,55 @@ serve(async (req) => {
         }
       }
 
-      console.log('API authentication successful, proceeding with minting...');
+      console.log('API authentication successful, checking minter role...');
+
+      // Check if the minting contract has the minter role
+      try {
+        const { ethers } = await import('https://esm.sh/ethers@5.7.2');
+        const { ERC721Client } = await import('https://esm.sh/@imtbl/contracts');
+        
+        const provider = new ethers.providers.JsonRpcProvider('https://rpc.testnet.immutable.com');
+        const contract = new ERC721Client(contractAddress);
+        const mintingContractAddress = Deno.env.get('IMMUTABLE_MINTING_CONTRACT_ADDRESS');
+        
+        if (!mintingContractAddress) {
+          throw new Error('IMMUTABLE_MINTING_CONTRACT_ADDRESS not configured');
+        }
+
+        // Check if minting contract has minter role
+        const MINTER_ROLE = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("MINTER_ROLE"));
+        const hasMinterRole = await contract.hasRole(MINTER_ROLE, mintingContractAddress);
+        
+        console.log('Minter role check:', {
+          contract: contractAddress,
+          minter: mintingContractAddress,
+          hasMinterRole
+        });
+
+        if (!hasMinterRole) {
+          return new Response(
+            JSON.stringify({ 
+              error: 'Minting contract does not have minter role',
+              solution: 'Please run the grant-minter-role function first to grant the necessary permissions',
+              details: {
+                contract: contractAddress,
+                minter: mintingContractAddress,
+                minterRole: MINTER_ROLE
+              }
+            }),
+            { 
+              status: 403, 
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+            }
+          );
+        }
+        
+        console.log('Minter role verified, proceeding with minting...');
+      } catch (roleError) {
+        console.error('Error checking minter role:', roleError);
+        // Continue with minting attempt but log the issue
+        console.log('Role check failed, proceeding anyway:', roleError.message);
+      }
       
       // Use the correct Immutable zkEVM API endpoint with proper path structure
       const apiEndpoint = `https://api.sandbox.immutable.com/v1/chains/${chainName}/collections/${contractAddress}/nfts/mint-requests`;
