@@ -89,42 +89,111 @@ serve(async (req) => {
     const nftIpfsHash = await uploadJSONToIPFS(nftMetadata);
     const metadataUri = `https://ipfs.io/ipfs/${nftIpfsHash}`;
 
-    // For now, we'll simulate the NFT creation response
-    // In a real implementation, you would use Immutable's SDK here
-    const mockNftId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-    const mockTxHash = `0x${Array.from({length: 64}, () => Math.floor(Math.random() * 16).toString(16)).join('')}`;
-    const mockCollectionId = 'krump-quest-collection';
+    // Get required environment variables for Immutable minting
+    const contractAddress = Deno.env.get('IMMUTABLE_CONTRACT_ADDRESS');
+    const secretApiKey = Deno.env.get('IMMUTABLE_SECRET_API_KEY');
 
-    // Update kollectible with Immutable data
-    const { error: updateError } = await supabase
-      .from('immutable_kollectibles')
-      .update({
-        immutable_nft_id: mockNftId,
-        immutable_tx_hash: mockTxHash,
-        immutable_collection_id: mockCollectionId,
-        nft_metadata_uri: metadataUri,
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', kollectibleId);
-
-    if (updateError) {
-      console.error('Error updating kollectible:', updateError);
+    if (!contractAddress || !secretApiKey) {
+      console.error('Missing Immutable configuration:', { contractAddress: !!contractAddress, secretApiKey: !!secretApiKey });
+      return new Response(
+        JSON.stringify({ error: 'Immutable configuration not found' }),
+        { 
+          status: 500, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
     }
 
-    return new Response(
-      JSON.stringify({
-        success: true,
-        nftId: mockNftId,
-        txHash: mockTxHash,
-        collectionId: mockCollectionId,
-        explorerUrl: `https://explorer.testnet.immutable.com/tx/${mockTxHash}`,
-        metadataUri: metadataUri
-      }),
-      { 
-        status: 200, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+    // Mint NFT on Immutable zkEVM using their Minting API
+    const referenceId = `krump-${kollectibleId.slice(-12)}`;
+    
+    try {
+      const mintResponse = await fetch('https://api.sandbox.immutable.com/v1/chains/imtbl-zkevm-testnet/collections/contracts/mint/batches/by-quantity', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${secretApiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          contract_address: contractAddress,
+          reference_id_one: referenceId,
+          recipient_one: walletAddress,
+          metadata_uri: metadataUri,
+        }),
+      });
+
+      if (!mintResponse.ok) {
+        const errorText = await mintResponse.text();
+        console.error('Immutable minting failed:', {
+          status: mintResponse.status,
+          statusText: mintResponse.statusText,
+          error: errorText
+        });
+        return new Response(
+          JSON.stringify({ 
+            error: `Minting failed: ${mintResponse.statusText}`,
+            details: errorText
+          }),
+          { 
+            status: mintResponse.status, 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          }
+        );
       }
-    );
+
+      const mintResult = await mintResponse.json();
+      console.log('Immutable mint result:', mintResult);
+
+      // Extract transaction hash and NFT ID from the response
+      const txHash = mintResult.transaction_hash;
+      const nftId = mintResult.token_id || referenceId;
+      const collectionId = contractAddress;
+
+      // Update kollectible with real Immutable data
+      const { error: updateError } = await supabase
+        .from('immutable_kollectibles')
+        .update({
+          immutable_nft_id: nftId,
+          immutable_tx_hash: txHash,
+          immutable_collection_id: collectionId,
+          nft_metadata_uri: metadataUri,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', kollectibleId);
+
+      if (updateError) {
+        console.error('Error updating kollectible:', updateError);
+      }
+
+      return new Response(
+        JSON.stringify({
+          success: true,
+          nftId: nftId,
+          txHash: txHash,
+          collectionId: collectionId,
+          explorerUrl: `https://explorer.testnet.immutable.com/tx/${txHash}`,
+          metadataUri: metadataUri,
+          referenceId: referenceId
+        }),
+        { 
+          status: 200, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+
+    } catch (mintError) {
+      console.error('Error during Immutable minting:', mintError);
+      return new Response(
+        JSON.stringify({ 
+          error: 'Failed to mint NFT on Immutable zkEVM',
+          details: mintError.message 
+        }),
+        { 
+          status: 500, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
 
   } catch (error) {
     console.error('Error minting on Immutable:', error);
