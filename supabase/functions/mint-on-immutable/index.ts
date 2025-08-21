@@ -94,9 +94,72 @@ serve(async (req) => {
         walletAddress,
         apiKeyLength: apiKey?.length 
       });
+
+      // First, test API authentication with a simple collection info call
+      const chainName = 'imtbl-zkevm-testnet';
+      const testEndpoint = `https://api.sandbox.immutable.com/v1/chains/${chainName}/collections/${contractAddress}`;
+      
+      console.log('Testing API authentication with endpoint:', testEndpoint);
+      
+      const testResponse = await fetch(testEndpoint, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      console.log('Auth test response status:', testResponse.status);
+      console.log('Auth test response headers:', Object.fromEntries(testResponse.headers.entries()));
+
+      if (!testResponse.ok) {
+        const testErrorText = await testResponse.text();
+        console.error('Authentication test failed:', {
+          status: testResponse.status,
+          statusText: testResponse.statusText,
+          error: testErrorText,
+          headers: Object.fromEntries(testResponse.headers.entries())
+        });
+        
+        // Try with x-immutable-api-key header as fallback
+        console.log('Trying fallback authentication method...');
+        const fallbackResponse = await fetch(testEndpoint, {
+          method: 'GET',
+          headers: {
+            'x-immutable-api-key': apiKey,
+            'Content-Type': 'application/json',
+          },
+        });
+
+        console.log('Fallback auth test response status:', fallbackResponse.status);
+        
+        if (!fallbackResponse.ok) {
+          const fallbackErrorText = await fallbackResponse.text();
+          console.error('Fallback authentication also failed:', {
+            status: fallbackResponse.status,
+            statusText: fallbackResponse.statusText,
+            error: fallbackErrorText
+          });
+          
+          return new Response(
+            JSON.stringify({ 
+              error: 'API authentication failed with both Bearer and x-immutable-api-key methods',
+              details: {
+                bearer: { status: testResponse.status, error: testErrorText },
+                apiKey: { status: fallbackResponse.status, error: fallbackErrorText }
+              }
+            }),
+            { 
+              status: 401, 
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+            }
+          );
+        }
+      }
+
+      console.log('API authentication successful, proceeding with minting...');
       
       // Use the correct Immutable zkEVM API endpoint with proper path structure
-      const chainName = 'imtbl-zkevm-testnet';
       const apiEndpoint = `https://api.sandbox.immutable.com/v1/chains/${chainName}/collections/${contractAddress}/nfts/mint-requests`;
       
       const requestBody = {
@@ -118,11 +181,15 @@ serve(async (req) => {
 
       console.log('Mint API endpoint:', apiEndpoint);
       console.log('Mint request body:', JSON.stringify(requestBody, null, 2));
+      console.log('Request headers being sent:', {
+        'Authorization': `Bearer ${apiKey.substring(0, 10)}...`,
+        'Content-Type': 'application/json'
+      });
 
       const mintResponse = await fetch(apiEndpoint, {
         method: 'POST',
         headers: {
-          'x-immutable-api-key': apiKey,
+          'Authorization': `Bearer ${apiKey}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(requestBody),
