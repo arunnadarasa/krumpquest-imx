@@ -95,24 +95,28 @@ serve(async (req) => {
         apiKeyLength: apiKey?.length 
       });
       
-      // Use Immutable REST API directly - this avoids SDK dependency issues
-      const mintResponse = await fetch('https://api.sandbox.immutable.com/v1/chains/imtbl-zkevm-testnet/collections/mint/requests', {
+      // Use the correct Immutable REST API endpoint
+      const requestBody = {
+        contract_address: contractAddress,
+        assets: [
+          {
+            owner_address: walletAddress,
+            reference_id: referenceId,
+            token_id: kollectible.token_id.toString(),
+            token_uri: kollectible.token_uri,
+          }
+        ]
+      };
+
+      console.log('Mint request body:', JSON.stringify(requestBody, null, 2));
+
+      const mintResponse = await fetch('https://api.sandbox.immutable.com/v1/mint/requests', {
         method: 'POST',
         headers: {
           'x-immutable-api-key': apiKey,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          contract_address: contractAddress,
-          assets: [
-            {
-              owner_address: walletAddress,
-              reference_id: referenceId,
-              token_id: kollectible.token_id.toString(),
-              token_uri: kollectible.token_uri,
-            }
-          ]
-        }),
+        body: JSON.stringify(requestBody),
       });
 
       if (!mintResponse.ok) {
