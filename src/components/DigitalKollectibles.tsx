@@ -48,6 +48,7 @@ export default function DigitalKollectibles() {
   const [prompt, setPrompt] = useState('');
   const [selectedStyle, setSelectedStyle] = useState('comic_book');
   const [aspectRatio, setAspectRatio] = useState('1:1');
+  const [isGrantingRole, setIsGrantingRole] = useState(false);
   const [characterGender, setCharacterGender] = useState('neutral');
   const [subjectType, setSubjectType] = useState('human');
   const [animalSpecies, setAnimalSpecies] = useState('');
@@ -389,6 +390,53 @@ export default function DigitalKollectibles() {
     }
   };
 
+  const grantMinterRole = async () => {
+    if (!address || !isConnected) {
+      toast.error('Please connect your wallet first');
+      return;
+    }
+
+    setIsGrantingRole(true);
+    
+    try {
+      console.log('🔐 Granting minter role to Immutable minting contract...');
+      toast.info('Granting minter role to Immutable minting contract...');
+
+      const { data, error } = await supabase.functions.invoke('grant-minter-role');
+
+      if (error) {
+        console.error('❌ Role granting error:', error);
+        throw new Error(`Role granting failed: ${error.message || 'Unknown error'}`);
+      }
+
+      if (!data?.success) {
+        console.error('❌ Role granting unsuccessful:', data);
+        throw new Error(data?.error || 'Role granting failed');
+      }
+
+      console.log('✅ Minter role granted successfully!');
+      console.log('📋 Transaction details:', {
+        txHash: data.transactionHash,
+        blockNumber: data.blockNumber,
+        gasUsed: data.gasUsed
+      });
+
+      toast.success('Minter role granted successfully!', {
+        action: {
+          label: 'View tx',
+          onClick: () => window.open(`https://explorer.testnet.immutable.com/tx/${data.transactionHash}`, '_blank'),
+        },
+      });
+      
+    } catch (error: any) {
+      console.error('💥 Error granting minter role:', error);
+      const errorMessage = error.message || 'Failed to grant minter role';
+      toast.error(`Role granting failed: ${errorMessage}`);
+    } finally {
+      setIsGrantingRole(false);
+    }
+  };
+
   const handleHideKollectible = async (kollectibleId: string) => {
     try {
       const { error } = await supabase
@@ -500,6 +548,37 @@ export default function DigitalKollectibles() {
             <Button asChild variant="secondary" size="sm">
               <a href="https://hub.immutable.com/faucet" target="_blank" rel="noopener noreferrer">Immutable Faucet</a>
             </Button>
+          </CardContent>
+        </Card>
+
+        {/* Minter Role Setup */}
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="text-lg">⚙️ Setup Required</CardTitle>
+            <CardDescription>
+              Grant minter permissions to Immutable's minting contract (one-time setup)
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+              <Button 
+                onClick={grantMinterRole}
+                disabled={isGrantingRole || !isConnected}
+                className="min-w-[200px]"
+              >
+                {isGrantingRole ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+                    Granting Role...
+                  </>
+                ) : (
+                  '🔐 Grant Minter Role'
+                )}
+              </Button>
+              <p className="text-sm text-muted-foreground">
+                This allows Immutable's minting service to mint NFTs on your contract. Required before minting works.
+              </p>
+            </div>
           </CardContent>
         </Card>
 
