@@ -1,6 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { Client, Environment } from 'https://esm.sh/@imtbl/sdk@2.4.9'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -103,23 +102,21 @@ serve(async (req) => {
       );
     }
 
-    // Initialize Immutable client
-    const client = new Client({
-      environment: Environment.SANDBOX,
-      apiKey: secretApiKey,
-    });
-
-    // Mint NFT on Immutable zkEVM using their SDK
+    // Mint NFT on Immutable zkEVM using their REST API
     const referenceId = `krump-${kollectibleId.slice(-12)}`;
-    const chainName = 'imtbl-zkevm-testnet';
     
     try {
       console.log('Starting Immutable mint with:', { contractAddress, referenceId, walletAddress });
       
-      const mintResponse = await client.createMintRequest({
-        chainName,
-        contractAddress,
-        createMintRequestRequest: {
+      // Use the correct Immutable API endpoint and structure
+      const mintResponse = await fetch('https://api.sandbox.immutable.com/v1/chains/imtbl-zkevm-testnet/collections/mint/requests', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${secretApiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          contract_address: contractAddress,
           assets: [
             {
               owner_address: walletAddress,
@@ -127,14 +124,34 @@ serve(async (req) => {
               metadata: nftMetadata,
             }
           ]
-        }
+        }),
       });
 
-      console.log('Immutable mint response:', mintResponse);
+      if (!mintResponse.ok) {
+        const errorText = await mintResponse.text();
+        console.error('Immutable minting failed:', {
+          status: mintResponse.status,
+          statusText: mintResponse.statusText,
+          error: errorText
+        });
+        return new Response(
+          JSON.stringify({ 
+            error: `Minting failed: ${mintResponse.statusText}`,
+            details: errorText
+          }),
+          { 
+            status: mintResponse.status, 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          }
+        );
+      }
+
+      const mintResult = await mintResponse.json();
+      console.log('Immutable mint response:', mintResult);
 
       // Check if we have the result data
-      if (!mintResponse || !mintResponse.result || !mintResponse.result[0]) {
-        console.error('Invalid mint response structure:', mintResponse);
+      if (!mintResult || !mintResult.result || !mintResult.result[0]) {
+        console.error('Invalid mint response structure:', mintResult);
         return new Response(
           JSON.stringify({ 
             error: 'Invalid response from Immutable API',
@@ -147,13 +164,13 @@ serve(async (req) => {
         );
       }
 
-      const mintResult = mintResponse.result[0];
+      const firstResult = mintResult.result[0];
       
       // Extract data from the response
-      const txHash = mintResult.transaction_hash;
-      const nftId = mintResult.token_id || referenceId;
+      const txHash = firstResult.transaction_hash;
+      const nftId = firstResult.token_id || referenceId;
       const collectionId = contractAddress;
-      const status = mintResult.status;
+      const status = firstResult.status;
 
       console.log('Mint result details:', { txHash, nftId, status, referenceId });
 
