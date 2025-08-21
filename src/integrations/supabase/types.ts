@@ -136,68 +136,33 @@ export type Database = {
       }
     }
     Views: {
-      kollectibles_public: {
-        Row: {
-          created_at: string | null
-          id: string | null
-          image_url: string | null
-          immutable_collection_id: string | null
-          immutable_nft_id: string | null
-          immutable_tx_hash: string | null
-          ipfs_hash: string | null
-          metadata_ipfs_hash: string | null
-          nft_metadata_uri: string | null
-          pinata_url: string | null
-          prompt: string | null
-          style: string | null
-          supabase_image_url: string | null
-          token_id: number | null
-          token_uri: string | null
-          updated_at: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          id?: string | null
-          image_url?: string | null
-          immutable_collection_id?: string | null
-          immutable_nft_id?: string | null
-          immutable_tx_hash?: string | null
-          ipfs_hash?: string | null
-          metadata_ipfs_hash?: string | null
-          nft_metadata_uri?: string | null
-          pinata_url?: string | null
-          prompt?: string | null
-          style?: string | null
-          supabase_image_url?: string | null
-          token_id?: number | null
-          token_uri?: string | null
-          updated_at?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          id?: string | null
-          image_url?: string | null
-          immutable_collection_id?: string | null
-          immutable_nft_id?: string | null
-          immutable_tx_hash?: string | null
-          ipfs_hash?: string | null
-          metadata_ipfs_hash?: string | null
-          nft_metadata_uri?: string | null
-          pinata_url?: string | null
-          prompt?: string | null
-          style?: string | null
-          supabase_image_url?: string | null
-          token_id?: number | null
-          token_uri?: string | null
-          updated_at?: string | null
-        }
-        Relationships: []
-      }
+      [_ in never]: never
     }
     Functions: {
       get_next_token_id: {
         Args: Record<PropertyKey, never>
         Returns: number
+      }
+      get_public_kollectibles: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          created_at: string
+          id: string
+          image_url: string
+          immutable_collection_id: string
+          immutable_nft_id: string
+          immutable_tx_hash: string
+          ipfs_hash: string
+          metadata_ipfs_hash: string
+          nft_metadata_uri: string
+          pinata_url: string
+          prompt: string
+          style: string
+          supabase_image_url: string
+          token_id: number
+          token_uri: string
+          updated_at: string
+        }[]
       }
     }
     Enums: {
