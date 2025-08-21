@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { Client, Environment } from 'https://esm.sh/@imtbl/sdk@2.4.9'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -59,11 +60,14 @@ serve(async (req) => {
       );
     }
 
-    // Create NFT metadata
+    // Create NFT metadata (embedded directly in the mint request)
     const nftMetadata = {
+      image: kollectible.supabase_image_url,
+      animation_url: null,
+      youtube_url: null,
       name: `Krump Quest Kollectible #${kollectible.id.slice(-8)}`,
       description: `${kollectible.prompt}. Generated AI artwork from Krump Quest featuring ${kollectible.style} style.`,
-      image: kollectible.supabase_image_url,
+      external_url: 'https://krumpquest.com',
       attributes: [
         {
           trait_type: 'Style',
@@ -82,12 +86,7 @@ serve(async (req) => {
           value: kollectible.prompt,
         }
       ],
-      external_url: 'https://krumpquest.com', // Replace with actual game URL
     };
-
-    // Upload metadata to IPFS using Pinata
-    const nftIpfsHash = await uploadJSONToIPFS(nftMetadata);
-    const metadataUri = `https://ipfs.io/ipfs/${nftIpfsHash}`;
 
     // Get required environment variables for Immutable minting
     const contractAddress = Deno.env.get('IMMUTABLE_CONTRACT_ADDRESS');
@@ -104,59 +103,68 @@ serve(async (req) => {
       );
     }
 
-    // Mint NFT on Immutable zkEVM using their Minting API
+    // Initialize Immutable client
+    const client = new Client({
+      environment: Environment.SANDBOX,
+      apiKey: secretApiKey,
+    });
+
+    // Mint NFT on Immutable zkEVM using their SDK
     const referenceId = `krump-${kollectibleId.slice(-12)}`;
+    const chainName = 'imtbl-zkevm-testnet';
     
     try {
-      const mintResponse = await fetch('https://api.sandbox.immutable.com/v1/chains/imtbl-zkevm-testnet/collections/contracts/mint/batches/by-quantity', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${secretApiKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          contract_address: contractAddress,
-          reference_id_one: referenceId,
-          recipient_one: walletAddress,
-          metadata_uri: metadataUri,
-        }),
+      console.log('Starting Immutable mint with:', { contractAddress, referenceId, walletAddress });
+      
+      const mintResponse = await client.createMintRequest({
+        chainName,
+        contractAddress,
+        createMintRequestRequest: {
+          assets: [
+            {
+              owner_address: walletAddress,
+              reference_id: referenceId,
+              metadata: nftMetadata,
+            }
+          ]
+        }
       });
 
-      if (!mintResponse.ok) {
-        const errorText = await mintResponse.text();
-        console.error('Immutable minting failed:', {
-          status: mintResponse.status,
-          statusText: mintResponse.statusText,
-          error: errorText
-        });
+      console.log('Immutable mint response:', mintResponse);
+
+      // Check if we have the result data
+      if (!mintResponse || !mintResponse.result || !mintResponse.result[0]) {
+        console.error('Invalid mint response structure:', mintResponse);
         return new Response(
           JSON.stringify({ 
-            error: `Minting failed: ${mintResponse.statusText}`,
-            details: errorText
+            error: 'Invalid response from Immutable API',
+            details: 'Missing result data'
           }),
           { 
-            status: mintResponse.status, 
+            status: 500, 
             headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
           }
         );
       }
 
-      const mintResult = await mintResponse.json();
-      console.log('Immutable mint result:', mintResult);
-
-      // Extract transaction hash and NFT ID from the response
+      const mintResult = mintResponse.result[0];
+      
+      // Extract data from the response
       const txHash = mintResult.transaction_hash;
       const nftId = mintResult.token_id || referenceId;
       const collectionId = contractAddress;
+      const status = mintResult.status;
 
-      // Update kollectible with real Immutable data
+      console.log('Mint result details:', { txHash, nftId, status, referenceId });
+
+      // Update kollectible with Immutable data
       const { error: updateError } = await supabase
         .from('immutable_kollectibles')
         .update({
           immutable_nft_id: nftId,
           immutable_tx_hash: txHash,
           immutable_collection_id: collectionId,
-          nft_metadata_uri: metadataUri,
+          nft_metadata_uri: null, // No separate metadata URI since it's embedded
           updated_at: new Date().toISOString()
         })
         .eq('id', kollectibleId);
@@ -171,8 +179,8 @@ serve(async (req) => {
           nftId: nftId,
           txHash: txHash,
           collectionId: collectionId,
-          explorerUrl: `https://explorer.testnet.immutable.com/tx/${txHash}`,
-          metadataUri: metadataUri,
+          status: status,
+          explorerUrl: txHash ? `https://explorer.testnet.immutable.com/tx/${txHash}` : null,
           referenceId: referenceId
         }),
         { 
@@ -206,35 +214,3 @@ serve(async (req) => {
     );
   }
 });
-
-// Helper function to upload JSON to IPFS via Pinata
-async function uploadJSONToIPFS(jsonData: any): Promise<string> {
-  const pinataJWT = Deno.env.get('PINATA_JWT');
-  if (!pinataJWT) {
-    throw new Error('PINATA_JWT not configured');
-  }
-
-  const formData = new FormData();
-  const blob = new Blob([JSON.stringify(jsonData)], { type: 'application/json' });
-  formData.append('file', blob, 'metadata.json');
-
-  const metadata = JSON.stringify({
-    name: 'Krump Quest NFT Metadata',
-  });
-  formData.append('pinataMetadata', metadata);
-
-  const response = await fetch('https://api.pinata.cloud/pinning/pinFileToIPFS', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${pinataJWT}`,
-    },
-    body: formData,
-  });
-
-  if (!response.ok) {
-    throw new Error(`Pinata upload failed: ${response.statusText}`);
-  }
-
-  const result = await response.json();
-  return result.IpfsHash;
-}
