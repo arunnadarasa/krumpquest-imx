@@ -95,22 +95,31 @@ serve(async (req) => {
         apiKeyLength: apiKey?.length 
       });
       
-      // Use the correct Immutable REST API endpoint
+      // Use the correct Immutable zkEVM API endpoint with proper path structure
+      const chainName = 'imtbl-zkevm-testnet';
+      const apiEndpoint = `https://api.sandbox.immutable.com/v1/chains/${chainName}/collections/${contractAddress}/nfts/mint-requests`;
+      
       const requestBody = {
-        contract_address: contractAddress,
         assets: [
           {
-            owner_address: walletAddress,
             reference_id: referenceId,
+            owner_address: walletAddress,
             token_id: kollectible.token_id.toString(),
-            token_uri: kollectible.token_uri,
+            metadata: {
+              name: kollectible.prompt.split(' ').slice(0, 8).join(' '), // Use first 8 words as name
+              description: kollectible.prompt,
+              image: kollectible.token_uri,
+              external_url: kollectible.token_uri,
+              attributes: []
+            }
           }
         ]
       };
 
+      console.log('Mint API endpoint:', apiEndpoint);
       console.log('Mint request body:', JSON.stringify(requestBody, null, 2));
 
-      const mintResponse = await fetch('https://api.sandbox.immutable.com/v1/mint/requests', {
+      const mintResponse = await fetch(apiEndpoint, {
         method: 'POST',
         headers: {
           'x-immutable-api-key': apiKey,
