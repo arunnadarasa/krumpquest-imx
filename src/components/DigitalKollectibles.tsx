@@ -29,6 +29,7 @@ import KollectibleGallery from './kollectibles/KollectibleGallery';
 
 export default function DigitalKollectibles() {
   const dispatch = useAppDispatch();
+  const gameState = useAppSelector(state => state.game);
   const { address, isConnected, chainId } = useAccount();
   const { data: walletClient } = useWalletClient();
   const { switchChain } = useSwitchChain();
@@ -193,30 +194,54 @@ export default function DigitalKollectibles() {
   };
 
   const mintOnImmutable = async () => {
+    console.log('🎨 Starting mintOnImmutable process...');
+    
+    // Store current game phase to prevent navigation issues
+    const currentPhase = gameState.currentPhase;
+    console.log('📍 Current game phase:', currentPhase);
+    
     if ((!generatedSupabaseUrl && !generatedImageUrl) || !address || !walletClient) {
+      console.error('❌ Pre-mint validation failed:', {
+        hasSupabaseUrl: !!generatedSupabaseUrl,
+        hasImageUrl: !!generatedImageUrl,
+        hasAddress: !!address,
+        hasWalletClient: !!walletClient
+      });
       toast.error('No artwork to mint or wallet not properly connected');
       return;
     }
 
+    console.log('✅ Pre-mint validation passed');
+    console.log('🔗 Current chain ID:', chainId);
+
     if (chainId !== 13473) {
       try {
+        console.log('🔄 Switching to Immutable zkEVM Testnet...');
         toast.info('Switching to Immutable zkEVM Testnet...');
         await switchChain({ chainId: 13473 });
-      } catch (error) {
+        console.log('✅ Chain switch completed');
+      } catch (error: any) {
+        console.error('❌ Chain switch failed:', error);
         toast.error('Please switch to Immutable zkEVM Testnet in your wallet');
         return;
       }
     }
 
     const finalPrompt = prompt.trim() || `A ${selectedStyle.toLowerCase()} style artwork featuring a ${subjectType === 'animal' ? animalSpecies : subjectType} character with ${characterGender} characteristics`;
+    
+    console.log('🖼️ Final prompt:', finalPrompt);
+    console.log('🎭 Selected style:', selectedStyle);
+    console.log('👤 Wallet address:', address);
 
     dispatch(setUploading(true));
     dispatch(clearError());
 
     try {
+      console.log('📤 Step 1: Uploading artwork to IPFS...');
       toast.info('Uploading artwork to IPFS...');
 
       const imageUrlToUpload = generatedSupabaseUrl || generatedImageUrl;
+      console.log('🖼️ Image URL to upload:', imageUrlToUpload?.substring(0, 50) + '...');
 
       const { data: uploadData, error: uploadError } = await supabase.functions.invoke('upload-to-ipfs', {
         body: {
@@ -227,11 +252,22 @@ export default function DigitalKollectibles() {
         },
       });
 
-      if (uploadError) throw uploadError;
-      if (!uploadData?.kollectible) throw new Error('Failed to create kollectible record');
+      console.log('📤 IPFS upload response:', { uploadData, uploadError });
+
+      if (uploadError) {
+        console.error('❌ IPFS upload error:', uploadError);
+        throw new Error(`IPFS upload failed: ${uploadError.message || 'Unknown error'}`);
+      }
+      
+      if (!uploadData?.kollectible) {
+        console.error('❌ No kollectible in upload response:', uploadData);
+        throw new Error('Failed to create kollectible record');
+      }
 
       const kollectible = uploadData.kollectible;
+      console.log('✅ Kollectible created:', { id: kollectible.id, token_id: kollectible.token_id });
       
+      console.log('🏗️ Step 2: Minting NFT on Immutable zkEVM...');
       toast.info('Minting NFT on Immutable zkEVM...');
 
       // Use the mint-on-immutable edge function (metadata already uploaded via upload-to-ipfs)
@@ -242,8 +278,25 @@ export default function DigitalKollectibles() {
         },
       });
 
-      if (mintError) throw mintError;
-      if (!mintResponse?.success) throw new Error(mintResponse?.error || 'Minting failed');
+      console.log('🏗️ Mint response:', { mintResponse, mintError });
+
+      if (mintError) {
+        console.error('❌ Minting error:', mintError);
+        throw new Error(`Minting failed: ${mintError.message || 'Unknown error'}`);
+      }
+      
+      if (!mintResponse?.success) {
+        console.error('❌ Mint response unsuccessful:', mintResponse);
+        throw new Error(mintResponse?.error || 'Minting failed');
+      }
+
+      console.log('✅ NFT minted successfully!');
+      console.log('📋 Mint details:', {
+        nftId: mintResponse.nftId,
+        txHash: mintResponse.txHash,
+        collectionId: mintResponse.collectionId,
+        explorerUrl: mintResponse.explorerUrl
+      });
 
       const updatedKollectible = {
         ...kollectible,
@@ -253,22 +306,54 @@ export default function DigitalKollectibles() {
         nft_metadata_uri: mintResponse.metadataUri,
       };
 
+      console.log('📊 Updating Redux state...');
       dispatch(addKollectible(updatedKollectible));
       dispatch(clearGeneratedImage());
       setPrompt('');
 
+      // Ensure we stay on the kollectibles page
+      console.log('📍 Ensuring we stay on kollectibles page...');
+      if (gameState.currentPhase !== 'digital_kollectibles') {
+        console.log('⚠️ Game phase changed during minting, restoring...');
+        dispatch(setGamePhase('digital_kollectibles'));
+      }
+
+      console.log('🎉 Minting process completed successfully!');
       toast.success('NFT successfully minted on Immutable zkEVM!', {
         action: {
           label: 'View tx',
           onClick: () => window.open(mintResponse.explorerUrl, '_blank'),
         },
       });
+      
     } catch (error: any) {
-      console.error('Error minting on Immutable:', error);
-      dispatch(setError(error.message || 'Failed to mint on Immutable zkEVM'));
-      toast.error('Failed to mint on Immutable zkEVM. Please try again.');
+      console.error('💥 Error during minting process:', {
+        error: error.message,
+        stack: error.stack,
+        currentPhase: gameState.currentPhase
+      });
+      
+      // Ensure we stay on the kollectibles page even if there's an error
+      if (gameState.currentPhase !== 'digital_kollectibles') {
+        console.log('🔄 Restoring kollectibles page after error...');
+        dispatch(setGamePhase('digital_kollectibles'));
+      }
+      
+      const errorMessage = error.message || 'Failed to mint on Immutable zkEVM';
+      dispatch(setError(errorMessage));
+      toast.error(`Minting failed: ${errorMessage}`);
+      
     } finally {
+      console.log('🏁 Minting process finished, cleaning up...');
       dispatch(setUploading(false));
+      
+      // Final check to ensure we're still on the right page
+      setTimeout(() => {
+        if (gameState.currentPhase !== 'digital_kollectibles') {
+          console.log('🚨 Final check: restoring kollectibles page...');
+          dispatch(setGamePhase('digital_kollectibles'));
+        }
+      }, 100);
     }
   };
 
