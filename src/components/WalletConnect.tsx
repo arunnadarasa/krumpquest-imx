@@ -46,10 +46,10 @@ export default function WalletConnect() {
           (!authenticationStatus ||
             authenticationStatus === 'authenticated');
 
-        // Auto-switch to Story Aeneid Testnet when connected to a different network
+        // Auto-switch to Immutable zkEVM Testnet when connected to a different network
         useEffect(() => {
-          if (connected && chain && chain.id !== 1315 && switchChain) {
-            switchChain({ chainId: 1315 });
+          if (connected && chain && chain.id !== 13473 && switchChain) {
+            switchChain({ chainId: 13473 });
           }
         }, [connected, chain, switchChain]);
 
@@ -205,7 +205,7 @@ export default function WalletConnect() {
                             <p className="font-exo font-semibold text-glow">{account.displayBalance}</p>
                           </div>
                           <Badge variant="outline" className="border-primary/40 text-primary bg-primary/10">
-                            {chain.name === 'Story Aeneid Testnet' ? 'IP' : 'ETH'}
+                            {chain.name === 'Immutable zkEVM Testnet' ? 'IMX' : 'ETH'}
                           </Badge>
                         </div>
                       )}

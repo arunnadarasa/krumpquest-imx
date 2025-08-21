@@ -13,8 +13,8 @@ export default function WalletStatus() {
   const { disconnect } = useDisconnect();
   const { switchChain, isPending: isSwitchingChain } = useSwitchChain();
 
-  const isStoryNetwork = chainId === 1315;
-  const networkName = isStoryNetwork ? 'Story Aeneid' : 'Wrong Network';
+  const isImmutableNetwork = chainId === 13473;
+  const networkName = isImmutableNetwork ? 'Immutable zkEVM' : 'Wrong Network';
 
   const copyAddress = () => {
     if (address) {
@@ -24,13 +24,13 @@ export default function WalletStatus() {
   };
 
   const openExplorer = () => {
-    if (address && isStoryNetwork) {
-      window.open(`https://aeneid.storyscan.io/address/${address}`, '_blank');
+    if (address && isImmutableNetwork) {
+      window.open(`https://explorer.testnet.immutable.com/address/${address}`, '_blank');
     }
   };
 
-  const switchToStory = () => {
-    switchChain({ chainId: 1315 });
+  const switchToImmutable = () => {
+    switchChain({ chainId: 13473 });
   };
 
   const formatAddress = (addr: string) => {
@@ -53,7 +53,7 @@ export default function WalletStatus() {
           <Wallet className="h-4 w-4" />
           <span className="hidden sm:inline">{formatAddress(address)}</span>
           <Badge 
-            variant={isStoryNetwork ? "default" : "destructive"}
+            variant={isImmutableNetwork ? "default" : "destructive"}
             className="hidden md:inline-flex"
           >
             {networkName}
@@ -69,13 +69,13 @@ export default function WalletStatus() {
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <span className="text-sm font-medium">Network</span>
-                <Badge variant={isStoryNetwork ? "default" : "destructive"}>
+                <Badge variant={isImmutableNetwork ? "default" : "destructive"}>
                   {networkName}
                 </Badge>
               </div>
-              {!isStoryNetwork && (
+              {!isImmutableNetwork && (
                 <Button
-                  onClick={switchToStory}
+                  onClick={switchToImmutable}
                   disabled={isSwitchingChain}
                   size="sm"
                   className="w-full"
@@ -86,7 +86,7 @@ export default function WalletStatus() {
                       Switching...
                     </>
                   ) : (
-                    'Switch to Story Aeneid'
+                    'Switch to Immutable zkEVM'
                   )}
                 </Button>
               )}
@@ -102,7 +102,7 @@ export default function WalletStatus() {
                 <Button onClick={copyAddress} size="sm" variant="ghost">
                   <Copy className="h-4 w-4" />
                 </Button>
-                {isStoryNetwork && (
+                {isImmutableNetwork && (
                   <Button onClick={openExplorer} size="sm" variant="ghost">
                     <ExternalLink className="h-4 w-4" />
                   </Button>
