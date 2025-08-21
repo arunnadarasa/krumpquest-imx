@@ -123,7 +123,7 @@ export default function ArtworkPreview({
                       <div className="space-y-1 text-xs text-muted-foreground">
                         <p>• Uploading to IPFS...</p>
                         <p>• Creating kollectible record...</p>
-                        <p>• Minting on Story Protocol...</p>
+                        <p>• Minting on Immutable zkEVM...</p>
                       </div>
                     </div>
                   </div>

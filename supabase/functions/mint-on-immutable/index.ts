@@ -36,7 +36,7 @@ serve(async (req) => {
       .from('immutable_kollectibles')
       .select('*')
       .eq('id', kollectibleId)
-      .eq('wallet_address', walletAddress)
+      .eq('wallet_address', walletAddress.toLowerCase())
       .single();
 
     if (fetchError || !kollectible) {
