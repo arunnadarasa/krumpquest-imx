@@ -24,11 +24,14 @@ export type Database = {
           immutable_tx_hash: string | null
           ipfs_hash: string | null
           is_hidden: boolean
+          metadata_ipfs_hash: string | null
           nft_metadata_uri: string | null
           pinata_url: string | null
           prompt: string
           style: string | null
           supabase_image_url: string | null
+          token_id: number | null
+          token_uri: string | null
           updated_at: string
           wallet_address: string
         }
@@ -41,11 +44,14 @@ export type Database = {
           immutable_tx_hash?: string | null
           ipfs_hash?: string | null
           is_hidden?: boolean
+          metadata_ipfs_hash?: string | null
           nft_metadata_uri?: string | null
           pinata_url?: string | null
           prompt: string
           style?: string | null
           supabase_image_url?: string | null
+          token_id?: number | null
+          token_uri?: string | null
           updated_at?: string
           wallet_address: string
         }
@@ -58,11 +64,14 @@ export type Database = {
           immutable_tx_hash?: string | null
           ipfs_hash?: string | null
           is_hidden?: boolean
+          metadata_ipfs_hash?: string | null
           nft_metadata_uri?: string | null
           pinata_url?: string | null
           prompt?: string
           style?: string | null
           supabase_image_url?: string | null
+          token_id?: number | null
+          token_uri?: string | null
           updated_at?: string
           wallet_address?: string
         }
@@ -130,7 +139,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_next_token_id: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
     }
     Enums: {
       [_ in never]: never
