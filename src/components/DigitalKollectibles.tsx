@@ -231,73 +231,10 @@ export default function DigitalKollectibles() {
       if (!uploadData?.kollectible) throw new Error('Failed to create kollectible record');
 
       const kollectible = uploadData.kollectible;
-      const imageIpfsHash: string = uploadData.ipfsHash || kollectible.ipfs_hash;
-      const imageIpfsUri = `https://ipfs.io/ipfs/${imageIpfsHash}`;
-
-      // Compute image hash (sha256 of image bytes)
-      const imageResp = await fetch(imageIpfsUri);
-      const imageBuf = await imageResp.arrayBuffer();
-      const imageDigest = await crypto.subtle.digest('SHA-256', imageBuf);
-      const imageHashHex = Array.from(new Uint8Array(imageDigest))
-        .map((b) => b.toString(16).padStart(2, '0'))
-        .join('');
-
-      // Build IP metadata
-      const createdAt = Math.floor(Date.now() / 1000).toString();
-      const ipMetadata = {
-        title: `Krump Kollectible` ,
-        description: finalPrompt,
-        image: imageIpfsUri,
-        imageHash: `0x${imageHashHex}`,
-        mediaUrl: imageIpfsUri,
-        mediaHash: `0x${imageHashHex}`,
-        mediaType: 'image/jpeg',
-        createdAt,
-        creators: [
-          {
-            name: address,
-            address,
-            contributionPercent: 100,
-          },
-        ],
-      };
-
-      // Build NFT metadata
-      const nftMetadata = {
-        name: `Krump Kollectible` ,
-        description: `${finalPrompt} — This NFT represents ownership of the IP Asset.`,
-        image: imageIpfsUri,
-        attributes: [
-          { key: 'Style', value: selectedStyle },
-          { key: 'Aspect Ratio', value: aspectRatio },
-        ],
-      };
-
-      // Upload metadata JSON to IPFS
-      const [{ data: ipMetaRes, error: ipMetaErr }, { data: nftMetaRes, error: nftMetaErr }] = await Promise.all([
-        supabase.functions.invoke('upload-json-to-ipfs', { body: { json: ipMetadata } }),
-        supabase.functions.invoke('upload-json-to-ipfs', { body: { json: nftMetadata } }),
-      ]);
-
-      if (ipMetaErr) throw ipMetaErr;
-      if (nftMetaErr) throw nftMetaErr;
-
-      const ipIpfsHash: string = ipMetaRes?.ipfsHash;
-      const nftIpfsHash: string = nftMetaRes?.ipfsHash;
-
-      if (!ipIpfsHash || !nftIpfsHash) throw new Error('Failed to upload metadata to IPFS');
-
-      // Compute metadata hashes (sha256 of JSON string)
-      const encoder = new TextEncoder();
-      const ipMetaStr = JSON.stringify(ipMetadata);
-      const nftMetaStr = JSON.stringify(nftMetadata);
-      const [ipMetaDigest, nftMetaDigest] = await Promise.all([
-        crypto.subtle.digest('SHA-256', encoder.encode(ipMetaStr)),
-        crypto.subtle.digest('SHA-256', encoder.encode(nftMetaStr)),
-      ]);
+      
       toast.info('Minting NFT on Immutable zkEVM...');
 
-      // Use the new mint-on-immutable edge function
+      // Use the mint-on-immutable edge function (metadata already uploaded via upload-to-ipfs)
       const { data: mintResponse, error: mintError } = await supabase.functions.invoke('mint-on-immutable', {
         body: {
           kollectibleId: kollectible.id,

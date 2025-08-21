@@ -59,33 +59,15 @@ serve(async (req) => {
       );
     }
 
-    // Create NFT metadata (embedded directly in the mint request)
-    const nftMetadata = {
-      image: kollectible.supabase_image_url,
-      animation_url: null,
-      youtube_url: null,
-      name: `Krump Quest Kollectible #${kollectible.id.slice(-8)}`,
-      description: `${kollectible.prompt}. Generated AI artwork from Krump Quest featuring ${kollectible.style} style.`,
-      external_url: 'https://krumpquest.com',
-      attributes: [
-        {
-          trait_type: 'Style',
-          value: kollectible.style,
-        },
-        {
-          trait_type: 'Created Date',
-          value: new Date(kollectible.created_at).toISOString().split('T')[0],
-        },
-        {
-          trait_type: 'Source',
-          value: 'Krump Quest',
-        },
-        {
-          trait_type: 'Generation Prompt',
-          value: kollectible.prompt,
+    if (!kollectible.token_uri || !kollectible.token_id) {
+      return new Response(
+        JSON.stringify({ error: 'Kollectible missing token URI or token ID. Please regenerate.' }),
+        { 
+          status: 400, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
         }
-      ],
-    };
+      );
+    }
 
     // Get required environment variables for Immutable minting
     const contractAddress = Deno.env.get('IMMUTABLE_CONTRACT_ADDRESS');
@@ -126,7 +108,8 @@ serve(async (req) => {
             {
               owner_address: walletAddress,
               reference_id: referenceId,
-              metadata: nftMetadata,
+              token_id: kollectible.token_id.toString(),
+              token_uri: kollectible.token_uri,
             }
           ]
         }),
@@ -186,7 +169,7 @@ serve(async (req) => {
           immutable_nft_id: nftId,
           immutable_tx_hash: txHash,
           immutable_collection_id: collectionId,
-          nft_metadata_uri: null, // No separate metadata URI since it's embedded
+          nft_metadata_uri: kollectible.token_uri,
           updated_at: new Date().toISOString()
         })
         .eq('id', kollectibleId);

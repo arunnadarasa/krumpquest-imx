@@ -142,10 +142,85 @@ serve(async (req) => {
     const fullGatewayUrl = gatewayUrl.startsWith('http') ? gatewayUrl : `https://${gatewayUrl}`
     const pinataUrl = `${fullGatewayUrl}/ipfs/${ipfsHash}`
 
-    // Save to database
+    // Create ERC-721 metadata JSON
+    const imageIpfsUri = `https://ipfs.io/ipfs/${ipfsHash}`;
+    const nftMetadata = {
+      name: `Krump Quest Kollectible`,
+      description: `${prompt}. Generated AI artwork from Krump Quest featuring ${style} style.`,
+      image: imageIpfsUri,
+      external_url: 'https://krumpquest.com',
+      attributes: [
+        {
+          trait_type: 'Style',
+          value: style,
+        },
+        {
+          trait_type: 'Created Date',
+          value: new Date().toISOString().split('T')[0],
+        },
+        {
+          trait_type: 'Source',
+          value: 'Krump Quest',
+        },
+        {
+          trait_type: 'Generation Prompt',
+          value: prompt,
+        }
+      ],
+    };
+
+    console.log('Uploading metadata to IPFS...');
+    
+    // Upload metadata JSON to IPFS
+    const metadataFormData = new FormData();
+    const metadataBlob = new Blob([JSON.stringify(nftMetadata, null, 2)], { 
+      type: 'application/json' 
+    });
+    metadataFormData.append('file', metadataBlob, `metadata-${Date.now()}.json`);
+    
+    const metadataMetadata = JSON.stringify({
+      name: `Krump Quest Kollectible Metadata - ${prompt.substring(0, 50)}`,
+      keyvalues: {
+        type: 'metadata',
+        creator: wallet_address,
+        prompt: prompt,
+        style: style,
+        game: 'Krump Quest',
+        timestamp: new Date().toISOString()
+      }
+    });
+    metadataFormData.append('pinataMetadata', metadataMetadata);
+
+    const metadataResponse = await fetch('https://api.pinata.cloud/pinning/pinFileToIPFS', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${pinataJWT}`,
+      },
+      body: metadataFormData,
+    });
+
+    if (!metadataResponse.ok) {
+      const errorText = await metadataResponse.text();
+      console.error('Metadata upload error:', errorText);
+      throw new Error(`Failed to upload metadata to Pinata: ${metadataResponse.status}`);
+    }
+
+    const metadataData = await metadataResponse.json();
+    console.log('Uploaded metadata to Pinata:', metadataData);
+
+    const metadataIpfsHash = metadataData.IpfsHash;
+    const metadataUrl = `${fullGatewayUrl}/ipfs/${metadataIpfsHash}`;
+
+    // Get next token ID
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
-    const supabaseKey = Deno.env.get('SUPABASE_ANON_KEY')!
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     const supabase = createClient(supabaseUrl, supabaseKey)
+
+    const { data: tokenIdData, error: tokenIdError } = await supabase.rpc('get_next_token_id');
+    if (tokenIdError) throw new Error(`Failed to get token ID: ${tokenIdError.message}`);
+    
+    const tokenId = tokenIdData;
+    const tokenUri = metadataUrl;
 
     console.log('Saving kollectible to database...')
     const { data: kollectible, error: dbError } = await supabase
@@ -156,8 +231,11 @@ serve(async (req) => {
         image_url: imageUrl,
         ipfs_hash: ipfsHash,
         pinata_url: pinataUrl,
-        supabase_image_url: imageUrl.startsWith('data:') ? null : imageUrl, // Store original URL if not base64
-        style
+        supabase_image_url: imageUrl.startsWith('data:') ? null : imageUrl,
+        style,
+        metadata_ipfs_hash: metadataIpfsHash,
+        token_uri: tokenUri,
+        token_id: tokenId
       })
       .select()
       .single()
@@ -174,6 +252,10 @@ serve(async (req) => {
         kollectible,
         ipfsHash,
         pinataUrl,
+        metadataIpfsHash,
+        metadataUrl,
+        tokenId,
+        tokenUri,
         success: true
       }),
       { 
